@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>權限管理</title>
+  <link rel="stylesheet" href="../src/css/admin.css" />
+</head>
+<body>
+  <header class="appbar">
+    <div class="brand">
+      <span class="brand-badge" aria-hidden="true"></span>
+      <h1>權限管理</h1>
+    </div>
+    <nav class="appbar-actions">
+      <a class="btn" href="teacher.html">教師申請表</a>
+      <a class="btn" href="teacher_in.html">校內活動表</a>
+      <button id="btnLogout" class="btn ghost is-hidden" type="button">登出</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section id="loginPanel" class="card">
+      <div class="card-hd">管理員登入</div>
+      <div class="card-bd">
+        <form id="loginForm" class="form">
+          <label class="field">
+            <span class="lbl">Email</span>
+            <input name="email" type="email" required />
+          </label>
+          <label class="field">
+            <span class="lbl">密碼</span>
+            <input name="password" type="password" required />
+          </label>
+          <div class="actions">
+            <button class="btn primary" type="submit">登入</button>
+          </div>
+          <div id="loginMsg" class="msg"></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="adminPanel" class="is-hidden">
+      <div class="section-hd">
+        <h2>使用者管理</h2>
+        <p id="adminHint" class="muted"></p>
+      </div>
+
+      <article class="card">
+        <div class="card-hd">新增使用者</div>
+        <div class="card-bd">
+          <form id="createForm" class="form grid g-2">
+            <label class="field">
+              <span class="lbl">姓名</span>
+              <input name="name" required />
+            </label>
+            <label class="field">
+              <span class="lbl">Email</span>
+              <input name="email" type="email" required />
+            </label>
+            <label class="field">
+              <span class="lbl">密碼</span>
+              <input name="password" type="password" required />
+            </label>
+            <label class="field">
+              <span class="lbl">角色</span>
+              <select name="role">
+                <option value="teacher">teacher</option>
+                <option value="staff">staff</option>
+                <option value="root">root</option>
+              </select>
+            </label>
+            <div class="actions span-2">
+              <button class="btn primary" type="submit">新增</button>
+              <span id="createMsg" class="msg"></span>
+            </div>
+          </form>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-hd">使用者列表</div>
+        <div class="card-bd">
+          <div class="table-wrap">
+            <table class="table" id="userTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>姓名</th>
+                  <th>Email</th>
+                  <th>角色</th>
+                  <th>建立時間</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="listMsg" class="msg"></div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="../src/js/admin.js" defer></script>
+</body>
+</html>

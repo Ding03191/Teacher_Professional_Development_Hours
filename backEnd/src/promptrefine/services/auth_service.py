@@ -14,3 +14,12 @@ def get_user_by_email(email):
 
 def verify_password(row, password):
     return row and check_password_hash(row[3], password)
+
+
+def verify_department_password(row, password):
+    return row and check_password_hash(row[4], password)
+
+
+def update_department_password(account: str, password: str):
+    password_hash = generate_password_hash(password)
+    db.update_department_password(account, password_hash)

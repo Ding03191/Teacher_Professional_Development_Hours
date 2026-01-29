@@ -57,3 +57,8 @@ def api_departments_bulk_create():
             errors.append(f"第 {idx} 筆寫入失敗：{e}")
 
     return _ok({"inserted_or_updated": success, "errors": errors})
+
+
+@departments_bp.get("/list")
+def api_departments_list():
+    return _ok(db.list_departments())

@@ -30,6 +30,11 @@ def create_app():
 
     db.init_db()
     db.init_users_table()
+    db.init_departments_from_csv()
+    db.ensure_root_department("教學資源組", "root", "root")
+    root_email = app.config.get("ROOT_EMAIL", "root")
+    root_password = app.config.get("ROOT_PASSWORD", "root1234")
+    db.ensure_root_user(root_email, root_password, name="root")
 
     app.register_blueprint(core_bp)
     app.register_blueprint(analyze_bp)

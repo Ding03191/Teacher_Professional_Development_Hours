@@ -1,6 +1,8 @@
 import sqlite3
 import os
 import shutil
+import csv
+from werkzeug.security import generate_password_hash
 # from datetime import datetime
 
 
@@ -8,6 +10,7 @@ _BASE_DIR = os.path.dirname(__file__)
 _BACKEND_DIR = os.path.abspath(os.path.join(_BASE_DIR, "..", "..", ".."))
 _LEGACY_DB_PATH = os.path.join(_BACKEND_DIR, "scoringHistory.sqlite")
 _DEFAULT_DB_PATH = os.path.join(_BACKEND_DIR, "db", "scoringHistory.sqlite")
+_DEFAULT_DEPT_CSV = os.path.join(_BACKEND_DIR, "123.csv")
 DB_NAME = os.environ.get("DB_PATH", _DEFAULT_DB_PATH)
 TABLE_NAME = 'history'
 LABEL_TABLE_NAME = "history_labels"
@@ -87,6 +90,35 @@ def init_db():
             c.execute(f"ALTER TABLE {TABLE_NAME} ADD COLUMN {col} {col_type}")
 
     conn.commit()
+    conn.close()
+
+
+def init_departments_from_csv(csv_path: str | None = None):
+    path = csv_path or _DEFAULT_DEPT_CSV
+    if not os.path.exists(path):
+        return
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(f"SELECT COUNT(1) FROM {DEPT_TABLE_NAME}")
+    count = c.fetchone()[0]
+    if count:
+        conn.close()
+        return
+    default_pwd = os.environ.get("DEPT_DEFAULT_PASSWORD", "12345678")
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            unit_no = (row.get("系統編號") or "").strip()
+            unit_name = (row.get("單位(使用者)名稱") or "").strip()
+            account = (row.get("帳號") or "").strip()
+            if not unit_no or not unit_name or not account:
+                continue
+            try:
+                unit_no_int = int(unit_no)
+            except Exception:
+                continue
+            pwd_hash = generate_password_hash(default_pwd)
+            create_department(unit_no_int, unit_name, account, pwd_hash)
     conn.close()
 
 # 2. Insert a record
@@ -325,6 +357,74 @@ def get_department_by_account(account: str):
     return row
 
 
+def update_department_password(account: str, password_hash: str):
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"UPDATE {DEPT_TABLE_NAME} SET password_hash=? WHERE account=?",
+        (password_hash, account.strip().lower()),
+    )
+    conn.commit()
+    conn.close()
+
+
+def list_departments():
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"SELECT unit_no, unit_name, account FROM {DEPT_TABLE_NAME} ORDER BY unit_no"
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [
+        {"unit_no": r[0], "unit_name": r[1], "account": r[2]}
+        for r in rows
+    ]
+
+
+def get_department_by_unit_name(unit_name: str):
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"SELECT id, unit_no, unit_name, account, password_hash, created_at FROM {DEPT_TABLE_NAME} WHERE unit_name=?",
+        (unit_name.strip(),),
+    )
+    row = c.fetchone()
+    conn.close()
+    return row
+
+
+def update_department_credentials(
+    dept_id: int, unit_name: str, account: str, password_hash: str
+):
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"""
+        UPDATE {DEPT_TABLE_NAME}
+        SET unit_name=?, account=?, password_hash=?
+        WHERE id=?
+        """,
+        (unit_name.strip(), account.strip().lower(), password_hash, dept_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def ensure_root_department(unit_name: str, account: str, password: str):
+    if not unit_name or not account or not password:
+        return
+    target = get_department_by_account(account)
+    if target:
+        pwd_hash = generate_password_hash(password)
+        update_department_credentials(target[0], unit_name, account, pwd_hash)
+        return
+    target = get_department_by_unit_name(unit_name)
+    if target:
+        pwd_hash = generate_password_hash(password)
+        update_department_credentials(target[0], unit_name, account, pwd_hash)
+
+
 def create_user(email, name, password_hash, role='teacher'):
     conn = get_conn()
     c = conn.cursor()
@@ -391,3 +491,14 @@ def count_users_by_role(role: str):
     count = c.fetchone()[0]
     conn.close()
     return count
+
+
+def ensure_root_user(email: str, password: str, name: str = "root"):
+    if not email or not password:
+        return
+    if count_users_by_role("root") > 0:
+        return
+    if get_user_by_email(email):
+        return
+    password_hash = generate_password_hash(password)
+    create_user(email, name, password_hash, role="root")

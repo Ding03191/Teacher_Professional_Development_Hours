@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>權限管理</title>
+  <title>教師帳號登入</title>
   <link rel="stylesheet" href="../src/css/admin.css" />
 </head>
 <body>
   <header class="appbar">
     <div class="brand">
       <span class="brand-badge" aria-hidden="true"></span>
-      <h1>權限管理</h1>
+      <h1>教師帳號登入</h1>
     </div>
-    <nav class="appbar-actions">
+    <nav class="appbar-actions is-hidden">
+      <a class="btn" href="history.html">History</a>
       <a class="btn" href="teacher.html">教師申請表</a>
       <a class="btn" href="teacher_in.html">校內活動表</a>
       <button id="btnLogout" class="btn ghost is-hidden" type="button">登出</button>
@@ -20,23 +21,41 @@
   </header>
 
   <main class="container">
-    <section id="loginPanel" class="card">
-      <div class="card-hd">管理員登入</div>
-      <div class="card-bd">
-        <form id="loginForm" class="form">
-          <label class="field">
-            <span class="lbl">Email</span>
-            <input name="email" type="email" required />
-          </label>
-          <label class="field">
-            <span class="lbl">密碼</span>
-            <input name="password" type="password" required />
-          </label>
-          <div class="actions">
-            <button class="btn primary" type="submit">登入</button>
-          </div>
-          <div id="loginMsg" class="msg"></div>
-        </form>
+    <section id="loginPanel" class="auth-shell">
+      <div class="auth-card">
+        <div class="auth-visual">
+          <div class="auth-eyebrow">Teacher Professional Development</div>
+          <h2>教師帳號登入</h2>
+          <p class="muted">進入後可管理教師帳號與權限，並檢視最新的申請狀態。</p>
+          <ul class="auth-points">
+            <li>快速查詢與管理</li>
+            <li>安全登入與權限控管</li>
+            <li>即時掌握最新紀錄</li>
+          </ul>
+        </div>
+        <div class="auth-form">
+          <form id="loginForm" class="form">
+            <label class="field">
+              <span class="lbl">單位（使用者）名稱</span>
+              <select id="unitSelect" name="unitName" required>
+                <option value="">請選擇單位</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="lbl">帳號</span>
+              <input name="account" type="text" placeholder="請輸入帳號" required />
+            </label>
+            <label class="field">
+              <span class="lbl">密碼</span>
+              <input name="password" type="password" placeholder="請輸入密碼" required />
+            </label>
+            <div class="actions">
+              <button class="btn primary" type="submit">登入</button>
+              <a class="link" href="register.html">還沒有帳號？註冊</a>
+            </div>
+            <div id="loginMsg" class="msg"></div>
+          </form>
+        </div>
       </div>
     </section>
 
@@ -101,6 +120,12 @@
       </article>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="footer-title">國立勤益科技大學 - 教務處 教學資源組（復通樓2樓）</div>
+    <div class="footer-line">辦公時間：週一～週五</div>
+    <div class="footer-line">電話：(04) 2392-4505 轉分機 2170</div>
+  </footer>
 
   <script src="../src/js/admin.js" defer></script>
 </body>

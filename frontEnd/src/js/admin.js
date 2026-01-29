@@ -6,6 +6,8 @@ const loginForm = document.getElementById("loginForm");
 const loginMsg = document.getElementById("loginMsg");
 const adminHint = document.getElementById("adminHint");
 const btnLogout = document.getElementById("btnLogout");
+const appbarActions = document.querySelector(".appbar-actions");
+const unitSelect = document.getElementById("unitSelect");
 
 const createForm = document.getElementById("createForm");
 const createMsg = document.getElementById("createMsg");
@@ -27,10 +29,7 @@ async function api(path, options = {}) {
     ...options,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.error || "request_failed");
-  }
-  if (data.ok === false) {
+  if (!res.ok || data.ok === false) {
     throw new Error(data.error || "request_failed");
   }
   return data;
@@ -41,20 +40,21 @@ async function checkMe() {
     const data = await api("/api/auth/me");
     const user = data.data?.user;
     if (!user) throw new Error("not_logged_in");
-    if (user.role !== "root") {
-      hide(adminPanel);
-      show(loginPanel);
-      loginMsg.textContent = "需要 root 權限才能使用管理功能。";
-      return;
-    }
     hide(loginPanel);
-    show(adminPanel);
+    show(appbarActions);
     show(btnLogout);
-    adminHint.textContent = `登入身份：${user.role}`;
-    await loadUsers();
+    if (user.role === "root") {
+      show(adminPanel);
+      adminHint.textContent = `已登入，角色：${user.role}`;
+      await loadUsers();
+    } else {
+      hide(adminPanel);
+      adminHint.textContent = "";
+    }
   } catch (err) {
     hide(adminPanel);
     show(loginPanel);
+    hide(appbarActions);
     hide(btnLogout);
   }
 }
@@ -95,14 +95,20 @@ loginForm?.addEventListener("submit", async (e) => {
   loginMsg.textContent = "";
   const fd = new FormData(loginForm);
   const payload = {
-    email: fd.get("email"),
+    unitName: fd.get("unitName"),
+    account: fd.get("account"),
     password: fd.get("password"),
   };
   try {
-    await api("/api/auth/login", {
+    const data = await api("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     });
+    const role = data.data?.user?.role;
+    if (role && role !== "root") {
+      window.location.href = "teacher.html";
+      return;
+    }
     await checkMe();
   } catch (err) {
     loginMsg.textContent = err.message;
@@ -161,7 +167,7 @@ userTableBody?.addEventListener("click", async (e) => {
     }
   }
   if (action === "delete") {
-    if (!confirm("確定要刪除此使用者？")) return;
+    if (!confirm("確定要刪除這位使用者嗎？")) return;
     try {
       await api(`/api/admin/users/${userId}`, { method: "DELETE" });
       await loadUsers();
@@ -172,3 +178,22 @@ userTableBody?.addEventListener("click", async (e) => {
 });
 
 document.addEventListener("DOMContentLoaded", checkMe);
+
+async function loadDepartments() {
+  if (!unitSelect) return;
+  try {
+    const data = await api("/api/departments/list");
+    const items = data.data || [];
+    unitSelect.innerHTML = '<option value="">請選擇單位</option>';
+    items.forEach((item) => {
+      const opt = document.createElement("option");
+      opt.value = item.unit_name;
+      opt.textContent = item.unit_name;
+      unitSelect.appendChild(opt);
+    });
+  } catch (err) {
+    // silent fail, keep placeholder
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadDepartments);

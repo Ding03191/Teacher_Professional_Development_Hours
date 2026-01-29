@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>History Records</title>
+  <link rel="stylesheet" href="../src/css/history.css" />
+</head>
+<body>
+  <header class="appbar">
+    <div class="brand">
+      <span class="brand-badge" aria-hidden="true"></span>
+      <h1>History Records</h1>
+    </div>
+    <nav class="appbar-actions">
+      <a class="btn" href="teacher.html">Teacher</a>
+      <a class="btn" href="teacher_in.html">In-Campus</a>
+      <a class="btn ghost" href="admin.html">Admin</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="card-hd">Date Filter</div>
+      <div class="card-bd">
+        <form id="historyForm" class="form grid g-2">
+          <label class="field">
+            <span class="lbl">Date</span>
+            <input name="date" type="date" required />
+          </label>
+          <div class="actions">
+            <button class="btn primary" type="submit">Fetch</button>
+            <span id="historyMsg" class="msg"></span>
+          </div>
+        </form>
+
+        <div class="history-summary">
+          <div class="metric">
+            <div class="metric-label">Total</div>
+            <div class="metric-value" id="historyTotal">-</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Passed</div>
+            <div class="metric-value ok" id="historyPassed">-</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Failed</div>
+            <div class="metric-value fail" id="historyFailed">-</div>
+          </div>
+        </div>
+
+        <div class="history-chart">
+          <div class="stack" role="img" aria-label="Pass and fail distribution">
+            <div class="seg pass" id="historyPassBar"></div>
+            <div class="seg fail" id="historyFailBar"></div>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><span class="dot pass"></span>Pass</span>
+            <span class="legend-item"><span class="dot fail"></span>Fail</span>
+          </div>
+        </div>
+
+        <div class="history-list-wrap">
+          <div class="history-list-title">Records</div>
+          <ul id="historyList" class="history-list"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="../src/js/history.js" defer></script>
+</body>
+</html>

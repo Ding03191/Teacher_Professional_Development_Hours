@@ -1,0 +1,298 @@
+:root {
+  --bg: #f6f3ef;
+  --surface: #ffffff;
+  --ink: #1a1a1a;
+  --muted: #6b7280;
+  --brand: #1d4ed8;
+  --accent: #f59e0b;
+  --line: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at top, #fff8ef 0%, #f5f1ec 40%, #efe9e2 100%);
+}
+
+.appbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-badge {
+  width: 12px;
+  height: 12px;
+  background: var(--brand);
+  border-radius: 2px;
+  transform: rotate(20deg);
+}
+
+.appbar-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 28px auto 64px;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+}
+
+.card-hd {
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.grid.g-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.lbl {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+input {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn.primary {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.btn.ghost {
+  background: transparent;
+}
+
+.msg {
+  min-height: 20px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.history-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.metric {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metric-value {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.metric-value.ok {
+  color: #16a34a;
+}
+
+.metric-value.fail {
+  color: #dc2626;
+}
+
+.history-chart {
+  margin-top: 16px;
+}
+
+.stack {
+  height: 14px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+  display: flex;
+}
+
+.seg {
+  height: 100%;
+}
+
+.seg.pass {
+  background: #22c55e;
+}
+
+.seg.fail {
+  background: #ef4444;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.dot.pass {
+  background: #22c55e;
+}
+
+.dot.fail {
+  background: #ef4444;
+}
+
+.history-list-wrap {
+  margin-top: 18px;
+}
+
+.history-list-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.history-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.history-info {
+  display: grid;
+  gap: 4px;
+}
+
+.history-title {
+  font-weight: 600;
+}
+
+.history-empty {
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.badge {
+  min-width: 52px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.badge.pass {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge.fail {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 760px) {
+  .grid.g-2 {
+    grid-template-columns: 1fr;
+  }
+  .history-summary {
+    grid-template-columns: 1fr;
+  }
+  .appbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}

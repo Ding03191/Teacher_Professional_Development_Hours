@@ -11,6 +11,7 @@ from .api.analyze import analyze_bp
 from .api.label import label_bp
 from .api.auth import auth_bp
 from .api.teacher import teacher_bp
+from .api.applications import applications_bp
 from .api.departments import departments_bp
 from .api.admin import admin_bp
 
@@ -43,6 +44,7 @@ def create_app():
     app.register_blueprint(teacher_bp)
     app.register_blueprint(departments_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(applications_bp)
 
     logging.getLogger(__name__).info("DB in use: %s", db.DB_NAME)
     return app

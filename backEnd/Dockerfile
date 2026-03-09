@@ -28,6 +28,7 @@ RUN pip install --no-cache-dir --disable-pip-version-check -r requirements.txt
 # 複製程式碼並設定權限
 COPY . /app
 RUN mkdir -p /app/db
+RUN mkdir -p /app/attachments
 RUN chown -R appuser:appuser /app
 
 USER appuser

@@ -1,11 +1,10 @@
-// teacher.js：教師成長時數前端匯出 PDF 版（不再呼叫後端）
-exportPdfClientSide
+// teacher.js：教師成長時數前端送出
+const API_BASE = window.API_BASE || "http://localhost:5000";
 // DOM 元素
 const formT      = document.getElementById('formTeacher');
 const filesInput = document.getElementById('files');
 const fileList   = document.getElementById('fileList');
 const msgEl      = document.getElementById('msg');
-const previewEl  = document.getElementById('preview');
 const certNoBox  = document.getElementById('certNoBox');
 
 // 是否核發證書 → 顯示 / 隱藏「證書字號」
@@ -43,6 +42,7 @@ function collectTeacherForm() {
     certNo:      (fd.get('hasCert') === 'yes'
                   ? (fd.get('certNo')?.toString().trim() || '')
                   : ''),
+    attachments: Array.from(filesInput?.files || []).map((f) => f.name),
     attachmentCount: filesInput?.files?.length || 0
   };
 }
@@ -80,11 +80,59 @@ formT?.addEventListener('submit', e => {
       '<span style="color:#dc2626">' + errs.join('<br>') + '</span>';
     return;
   }
-  msgEl.innerHTML =
-    '<span style="color:#16a34a">資料已通過前端檢核，可匯出 PDF / Word。</span>';
-
-  // 同步更新預覽 JSON
-  previewEl.textContent = JSON.stringify(collectTeacherForm(), null, 2);
+  msgEl.innerHTML = '<span style="color:#16a34a">送出中…</span>';
+  const data = collectTeacherForm();
+  fetch(`${API_BASE}/api/applications`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      app_type: "out",
+      data,
+      summary: {
+        event_name: data.courseTitle,
+        event_date: data.eventDate,
+        organizer: data.organizer,
+      },
+    }),
+  })
+    .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
+    .then(({ ok, body }) => {
+      if (!ok || body.ok === false) {
+        throw new Error(body.error || "submit_failed");
+      }
+      const appId = body.data?.id;
+      const files = Array.from(filesInput?.files || []);
+      if (!appId || files.length === 0) {
+        msgEl.innerHTML =
+          '<span style="color:#16a34a">送出成功，將前往歷史記錄。</span>';
+        setTimeout(() => {
+          window.location.href = "history.html";
+        }, 300);
+        return;
+      }
+      const fd = new FormData();
+      files.forEach((file) => fd.append("files", file));
+      return fetch(`${API_BASE}/api/applications/${appId}/files`, {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      })
+        .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
+        .then(({ ok, body }) => {
+          if (!ok || body.ok === false) {
+            throw new Error(body.error || "upload_failed");
+          }
+          msgEl.innerHTML =
+            '<span style="color:#16a34a">送出成功，將前往歷史記錄。</span>';
+          setTimeout(() => {
+            window.location.href = "history.html";
+          }, 300);
+        });
+    })
+    .catch((err) => {
+      msgEl.innerHTML = `<span style="color:#dc2626">${err.message}</span>`;
+    });
 });
 
 /* ========= 填入「Word 表格版」PDF 表單內容 ========= */
@@ -128,29 +176,3 @@ function fillPdfForm(d) {
   }
 }
 
-// ====== 用 html2pdf 產生 PDF（抓 Word 表格版 pdfForm） ======
-function exportPdfClientSide() {
-  const errs = validateTeacher();
-  if (errs.length) {
-    alert(errs.join('\n'));
-    return;
-  }
-
-  // 把資料塞到 pdfForm（讓列印內容正確）
-  fillPdfForm(collectTeacherForm());
-
-  // 開啟列印視窗 → 使用者選「另存為 PDF」
-  window.print();
-}
-
-// 綁定「匯出 PDF」按鈕
-document.getElementById('btnExportPDF')?.addEventListener('click', () => {
-  exportPdfClientSide();
-});
-
-// 進站就先顯示一份預覽（空表）
-document.addEventListener('DOMContentLoaded', () => {
-  if (previewEl && formT) {
-    previewEl.textContent = JSON.stringify(collectTeacherForm(), null, 2);
-  }
-});

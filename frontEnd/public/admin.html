@@ -3,10 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../src/css/layout.css">
   <title>教師帳號登入</title>
   <link rel="stylesheet" href="../src/css/admin.css" />
 </head>
 <body>
+  <div class="layout">
+    <header class="layout-topbar">
+      <div class="layout-title">國立勤益科技大學教師成長時數平台</div>
+      <div class="topbar-actions">
+        <span class="topbar-user" aria-hidden="true">◎</span>
+        <a class="topbar-link" href="admin.html">登入</a>
+        <a class="topbar-link" href="admin.html">設定</a>
+        <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
+      </div>
+    </header>
+    <aside class="layout-sidebar">
+      <nav class="sidebar-nav">
+        <a class="nav-link" href="teacher_in.html">校內申請</a>
+        <a class="nav-link" href="teacher.html">校外申請</a>
+        <a class="nav-link" href="history.html">歷史記錄</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="lang-btn" type="button">語言切換</button>
+      </div>
+    </aside>
+    <div class="layout-main">
   <header class="appbar">
     <div class="brand">
       <span class="brand-badge" aria-hidden="true"></span>
@@ -127,6 +149,8 @@
     <div class="footer-line">電話：(04) 2392-4505 轉分機 2170</div>
   </footer>
 
+  </div>
+  </div>
   <script src="../src/js/admin.js" defer></script>
 </body>
 </html>

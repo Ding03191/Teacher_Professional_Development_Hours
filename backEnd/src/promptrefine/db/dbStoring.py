@@ -2,6 +2,7 @@ import sqlite3
 import os
 import shutil
 import csv
+import json
 from werkzeug.security import generate_password_hash
 # from datetime import datetime
 
@@ -15,6 +16,7 @@ DB_NAME = os.environ.get("DB_PATH", _DEFAULT_DB_PATH)
 TABLE_NAME = 'history'
 LABEL_TABLE_NAME = "history_labels"
 DEPT_TABLE_NAME = "departments"
+APP_TABLE_NAME = "applications"
 
 
 def _ensure_db_path():
@@ -81,6 +83,19 @@ def init_db():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    c.execute(f'''
+        CREATE TABLE IF NOT EXISTS {APP_TABLE_NAME} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            app_type TEXT NOT NULL,
+            unit_name TEXT NOT NULL,
+            account TEXT NOT NULL,
+            event_name TEXT,
+            event_date TEXT,
+            organizer TEXT,
+            data_json TEXT NOT NULL,
+            created_at DATETIME DEFAULT (datetime('now','localtime'))
+        )
+    ''')
     conn.commit()
 
     # Backward-compatible schema migration: add columns if old DB already exists.
@@ -89,6 +104,158 @@ def init_db():
         if col not in existing_cols:
             c.execute(f"ALTER TABLE {TABLE_NAME} ADD COLUMN {col} {col_type}")
 
+    conn.commit()
+    conn.close()
+
+
+def insert_application(app_type: str, unit_name: str, account: str, data: dict, summary: dict | None = None):
+    summary = summary or {}
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f'''
+        INSERT INTO {APP_TABLE_NAME} (
+            app_type, unit_name, account, event_name, event_date, organizer, data_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''',
+        (
+            app_type,
+            unit_name,
+            account,
+            summary.get("event_name"),
+            summary.get("event_date"),
+            summary.get("organizer"),
+            json.dumps(data, ensure_ascii=False),
+        ),
+    )
+    conn.commit()
+    app_id = c.lastrowid
+    conn.close()
+    return app_id
+
+
+def list_applications(app_type: str | None = None, unit_name: str | None = None, account: str | None = None):
+    conn = _connect()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    clauses = []
+    params = []
+    if app_type and app_type != "all":
+        clauses.append("app_type = ?")
+        params.append(app_type)
+    if unit_name and account:
+        clauses.append("(unit_name = ? OR account = ?)")
+        params.extend([unit_name, account])
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    c.execute(
+        f"""
+        SELECT id, app_type, unit_name, account, event_name, event_date, organizer, data_json, created_at
+        FROM {APP_TABLE_NAME}
+        {where}
+        ORDER BY created_at DESC, id DESC
+        """,
+        params,
+    )
+    rows = c.fetchall()
+    conn.close()
+    records = []
+    for row in rows:
+        records.append(
+            {
+                "id": row["id"],
+                "app_type": row["app_type"],
+                "unit_name": row["unit_name"],
+                "account": row["account"],
+                "event_name": row["event_name"],
+                "event_date": row["event_date"],
+                "organizer": row["organizer"],
+                "data": json.loads(row["data_json"] or "{}"),
+                "created_at": row["created_at"],
+            }
+        )
+    return records
+
+
+def get_application(app_id: int):
+    conn = _connect()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute(
+        f"""
+        SELECT id, app_type, unit_name, account, event_name, event_date, organizer, data_json, created_at
+        FROM {APP_TABLE_NAME}
+        WHERE id = ?
+        """,
+        (app_id,),
+    )
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {
+        "id": row["id"],
+        "app_type": row["app_type"],
+        "unit_name": row["unit_name"],
+        "account": row["account"],
+        "event_name": row["event_name"],
+        "event_date": row["event_date"],
+        "organizer": row["organizer"],
+        "data": json.loads(row["data_json"] or "{}"),
+        "created_at": row["created_at"],
+    }
+
+
+def update_application(app_id: int, data: dict, summary: dict | None = None):
+    summary = summary or {}
+    record = get_application(app_id)
+    if record:
+        existing = record.get("data") or {}
+        if existing.get("attachments_files") and not data.get("attachments_files"):
+            data["attachments_files"] = existing.get("attachments_files")
+        if existing.get("attachments") and not data.get("attachments"):
+            data["attachments"] = existing.get("attachments")
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"""
+        UPDATE {APP_TABLE_NAME}
+        SET event_name = ?, event_date = ?, organizer = ?, data_json = ?
+        WHERE id = ?
+        """,
+        (
+            summary.get("event_name"),
+            summary.get("event_date"),
+            summary.get("organizer"),
+            json.dumps(data, ensure_ascii=False),
+            app_id,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+def add_application_files(app_id: int, files_info: list[dict]):
+    record = get_application(app_id)
+    if not record:
+        return
+    data = record.get("data") or {}
+    existing = data.get("attachments_files") or []
+    data["attachments_files"] = existing + files_info
+    update_application(
+        app_id,
+        data,
+        {
+            "event_name": record.get("event_name"),
+            "event_date": record.get("event_date"),
+            "organizer": record.get("organizer"),
+        },
+    )
+
+
+def delete_application(app_id: int):
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(f"DELETE FROM {APP_TABLE_NAME} WHERE id = ?", (app_id,))
     conn.commit()
     conn.close()
 

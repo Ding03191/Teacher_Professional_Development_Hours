@@ -8,6 +8,23 @@ const adminHint = document.getElementById("adminHint");
 const btnLogout = document.getElementById("btnLogout");
 const appbarActions = document.querySelector(".appbar-actions");
 const unitSelect = document.getElementById("unitSelect");
+const topbarUser = document.querySelector(".topbar-user");
+const logoutBtnTop = document.getElementById("btnLogoutTop");
+
+function setAvatar(user) {
+  if (!topbarUser || !user) return;
+  topbarUser.classList.remove("role-root", "role-dept");
+  if (user.role === "root") {
+    topbarUser.textContent = "管";
+    topbarUser.title = "教學資源組";
+    topbarUser.classList.add("role-root");
+    return;
+  }
+  const name = user.unit_name || user.name || user.account || user.email || "U";
+  topbarUser.textContent = name.slice(0, 2);
+  topbarUser.title = name;
+  topbarUser.classList.add("role-dept");
+}
 
 const createForm = document.getElementById("createForm");
 const createMsg = document.getElementById("createMsg");
@@ -43,6 +60,8 @@ async function checkMe() {
     hide(loginPanel);
     show(appbarActions);
     show(btnLogout);
+    logoutBtnTop?.classList.remove("is-hidden");
+    setAvatar(user);
     if (user.role === "root") {
       show(adminPanel);
       adminHint.textContent = `已登入，角色：${user.role}`;
@@ -56,6 +75,7 @@ async function checkMe() {
     show(loginPanel);
     hide(appbarActions);
     hide(btnLogout);
+    logoutBtnTop?.classList.add("is-hidden");
   }
 }
 
@@ -116,6 +136,14 @@ loginForm?.addEventListener("submit", async (e) => {
 });
 
 btnLogout?.addEventListener("click", async () => {
+  try {
+    await api("/api/auth/logout", { method: "POST" });
+  } finally {
+    await checkMe();
+  }
+});
+
+logoutBtnTop?.addEventListener("click", async () => {
   try {
     await api("/api/auth/logout", { method: "POST" });
   } finally {

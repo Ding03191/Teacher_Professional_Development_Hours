@@ -56,11 +56,12 @@ def login():
             return json_err("登入資訊錯誤", 401)
         session.clear()
         session["uid"] = dept[0]
-        session["role"] = "dept"
+        role = "root" if dept[2] == "教學資源組" or dept[3] == "root" else "dept"
+        session["role"] = role
         session["unit_name"] = dept[2]
         session["account"] = dept[3]
         return json_ok(
-            {"user": {"id": dept[0], "unit_name": dept[2], "account": dept[3], "role": "dept"}}
+            {"user": {"id": dept[0], "unit_name": dept[2], "account": dept[3], "role": role}}
         )
 
     email = (data.get("email") or "").strip().lower()

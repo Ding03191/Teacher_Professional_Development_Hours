@@ -5,6 +5,7 @@ openai==1.98.0
 # LangChain (核心)
 langchain==0.3.27
 langchain-openai==0.3.28
+langchain-community==0.3.29
 
 # 向量與嵌入
 faiss-cpu==1.11.0.post1
@@ -14,10 +15,11 @@ pdfplumber==0.11.7
 pdf2image==1.17.0
 pytesseract==0.3.13
 PyPDF2==3.0.1
+reportlab==4.2.2
 Pillow==11.3.0
 
 # 基礎套件
 numpy==2.3.2
-requests==2.32.4
+requests==2.32.5
 python-dotenv==1.1.1
 tqdm==4.67.1

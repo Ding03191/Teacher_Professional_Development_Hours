@@ -255,6 +255,7 @@ textarea{
 }
 /* ===== PDF 匯出版面（做成你截圖那種 Word 表格風格） ===== */
 #pdfForm{
+  display: none;
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
@@ -335,6 +336,7 @@ textarea{
 
   /* 固定從左上角開始印 */
   #pdfForm {
+    display: block !important;
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;

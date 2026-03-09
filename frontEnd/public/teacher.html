@@ -3,10 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../src/css/layout.css">
   <title>教師成長時數申請平台</title>
   <link rel="stylesheet" href="../src/css/teacher.css">
 </head>
 <body>
+  <div class="layout">
+    <header class="layout-topbar">
+      <div class="layout-title">國立勤益科技大學教師成長時數平台</div>
+      <div class="topbar-actions">
+        <span class="topbar-user" aria-hidden="true">◎</span>
+        <a class="topbar-link" href="admin.html">登入</a>
+        <a class="topbar-link" href="admin.html">設定</a>
+        <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
+      </div>
+    </header>
+    <aside class="layout-sidebar">
+      <nav class="sidebar-nav">
+        <a class="nav-link" href="teacher_in.html">校內申請</a>
+        <a class="nav-link active" href="teacher.html">校外申請</a>
+        <a class="nav-link" href="history.html">歷史記錄</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="lang-btn" type="button">語言切換</button>
+      </div>
+    </aside>
+    <div class="layout-main">
 
   <header class="appbar" role="banner">
     <div class="brand">
@@ -25,7 +47,7 @@
     <section class="hero">
       <div class="hero-text">
         <h2>國立勤益科技大學 教師成長時數認證表線上申請</h2>
-        <p class="muted">提供教師填寫成長時數申請表，並匯出正式檔案後再交由學校流程審核。</p>
+        <p class="muted">提供教師填寫成長時數申請表，完成後交由學校流程審核。</p>
       </div>
       <div class="hero-cta">
         <a class="btn primary" href="#form">開始填寫</a>
@@ -203,25 +225,12 @@
                 <p class="muted">請至少上傳 1 份：證書影本、時數條或研習手冊封面影本。</p>
                 <ul id="fileList" class="file-list"></ul>
 
-                <!-- 匯出區 -->
-                <div class="export-actions">
-                  <div class="muted">⬇ 匯出這份申請資料</div>
-                  <div class="row wrap">
-                    <button type="button" id="btnExportPDF"  class="btn">匯出 PDF</button>
-                  </div>
-                </div>
               </div>
             </div>
 
-            <details class="note">
-              <summary>送出前預覽（JSON）</summary>
-              <pre id="preview" class="preview"></pre>
-            </details>
-
             <div id="msg" class="msg"></div>
             <div class="actions">
-              <button type="reset" class="btn">清除</button>
-              <button type="submit" class="btn primary">前端檢查</button>
+              <button type="submit" class="btn primary">送出</button>
             </div>
           </form>
         </div>
@@ -230,13 +239,15 @@
       <!-- 新增：申請完成提醒文字 -->
       <div class="important-tip">
         <strong>最後步驟提醒：</strong>
-        <span>表單填寫完畢後，請匯出 PDF，並列印紙本後送出，方便完成申請。</span>
+        <span>表單填寫完畢後，請列印紙本後送出，方便完成申請。</span>
       </div>
       </div>
     </section>
 
   </main>
-
+  </div>
+  </div>
+  <script src="../src/js/auth_guard.js" defer></script>
   <script src="../src/js/teacher.js" defer></script>
 </body>
 </html>

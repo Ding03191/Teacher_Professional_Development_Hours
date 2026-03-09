@@ -1,0 +1,245 @@
+:root {
+  --ui-bg: #f2f2f2;
+  --ui-surface: #ffffff;
+  --ui-line: #cfcfcf;
+  --ui-text: #222;
+  --ui-muted: #666;
+  --ui-accent: #2d6cdf;
+}
+
+body {
+  background: var(--ui-bg);
+  color: var(--ui-text);
+}
+
+.layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 64px 1fr;
+  grid-template-areas:
+    "topbar topbar"
+    "sidebar main";
+}
+
+.layout-topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  background: var(--ui-surface);
+  border-bottom: 1px solid var(--ui-line);
+}
+
+.layout-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-user {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--ui-line);
+  background: #f7f7f7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--ui-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.topbar-user.role-root {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+.topbar-user.role-dept {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+
+.topbar-link {
+  color: var(--ui-text);
+  text-decoration: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.topbar-link:hover {
+  background: #f1f1f1;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.layout-sidebar {
+  grid-area: sidebar;
+  background: var(--ui-surface);
+  border-right: 1px solid var(--ui-line);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-link {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--ui-text);
+}
+
+.nav-link:hover {
+  background: #f3f3f3;
+}
+
+.nav-link.active {
+  background: #e9eefc;
+  color: var(--ui-accent);
+  font-weight: 700;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+.lang-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: 18px;
+  font-size: 13px;
+  color: var(--ui-text);
+  background: #fff;
+}
+
+.layout-main {
+  grid-area: main;
+  background: var(--ui-surface);
+  border-top: 1px solid var(--ui-line);
+  padding: 18px 22px 80px;
+  min-width: 0;
+}
+
+.layout-main .container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Hide legacy headers to keep new layout clean */
+.appbar {
+  display: none !important;
+}
+
+/* AI widget */
+.ai-widget {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 320px;
+  max-width: calc(100vw - 36px);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 999;
+}
+
+.ai-widget.is-collapsed .ai-body {
+  display: none;
+}
+
+.ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f6f6f6;
+  border-bottom: 1px solid var(--ui-line);
+  font-weight: 700;
+}
+
+.ai-body {
+  padding: 10px 12px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.ai-body textarea {
+  width: 100%;
+  min-height: 78px;
+  resize: vertical;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.ai-body .ai-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ai-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--ui-line);
+  background: #fff;
+  cursor: pointer;
+}
+
+.ai-btn.primary {
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 64px auto 1fr;
+    grid-template-areas:
+      "topbar"
+      "sidebar"
+      "main";
+  }
+  .layout-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--ui-line);
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .sidebar-footer {
+    margin-left: auto;
+  }
+}

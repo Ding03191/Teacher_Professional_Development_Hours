@@ -275,9 +275,22 @@ def init_departments_from_csv(csv_path: str | None = None):
     with open(path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            unit_no = (row.get("系統編號") or "").strip()
-            unit_name = (row.get("單位(使用者)名稱") or "").strip()
-            account = (row.get("帳號") or "").strip()
+            # CSV headers are expected to be Chinese (see 123.csv). Support legacy garbled headers too.
+            unit_no = (
+                row.get("????")
+                or row.get("??????")
+                or ""
+            ).strip()
+            unit_name = (
+                row.get("??(???)??")
+                or row.get("???(????????")
+                or ""
+            ).strip()
+            account = (
+                row.get("??")
+                or row.get("???")
+                or ""
+            ).strip()
             if not unit_no or not unit_name or not account:
                 continue
             try:
@@ -582,14 +595,16 @@ def ensure_root_department(unit_name: str, account: str, password: str):
     if not unit_name or not account or not password:
         return
     target = get_department_by_account(account)
+    pwd_hash = generate_password_hash(password)
     if target:
-        pwd_hash = generate_password_hash(password)
         update_department_credentials(target[0], unit_name, account, pwd_hash)
         return
     target = get_department_by_unit_name(unit_name)
     if target:
-        pwd_hash = generate_password_hash(password)
         update_department_credentials(target[0], unit_name, account, pwd_hash)
+        return
+    # If no existing department matches, create a root department entry.
+    create_department(0, unit_name, account, pwd_hash)
 
 
 def create_user(email, name, password_hash, role='teacher'):

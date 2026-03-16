@@ -1,11 +1,14 @@
 // teacher.js：教師成長時數前端送出
-const API_BASE = window.API_BASE || "http://localhost:5000";
+const API_BASE = window.API_BASE || "";
 // DOM 元素
 const formT      = document.getElementById('formTeacher');
 const filesInput = document.getElementById('files');
 const fileList   = document.getElementById('fileList');
 const msgEl      = document.getElementById('msg');
 const certNoBox  = document.getElementById('certNoBox');
+const relevanceScoreValue = document.getElementById('relevanceScoreValue');
+const relevanceScoreMsg = document.getElementById('relevanceScoreMsg');
+const btnScoreOut = document.getElementById('btnScoreOut');
 
 // 是否核發證書 → 顯示 / 隱藏「證書字號」
 formT?.addEventListener('change', e => {
@@ -77,7 +80,10 @@ formT?.addEventListener('submit', e => {
   const errs = validateTeacher();
   if (errs.length) {
     msgEl.innerHTML =
-      '<span style="color:#dc2626">' + errs.join('<br>') + '</span>';
+      '<span style=\"color:#dc2626\">' + errs.join('<br>') + '</span>';
+    return;
+  }
+  if (!confirm('???????????????????????????')) {
     return;
   }
   msgEl.innerHTML = '<span style="color:#16a34a">送出中…</span>';
@@ -121,7 +127,8 @@ formT?.addEventListener('submit', e => {
         .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
         .then(({ ok, body }) => {
           if (!ok || body.ok === false) {
-            throw new Error(body.error || "upload_failed");
+            if (body.error === "only_pdf_or_xlsx_allowed") throw new Error("??? PDF ? Excel?xlsx????");
+          throw new Error(body.error || "upload_failed");
           }
           msgEl.innerHTML =
             '<span style="color:#16a34a">送出成功，將前往歷史記錄。</span>';

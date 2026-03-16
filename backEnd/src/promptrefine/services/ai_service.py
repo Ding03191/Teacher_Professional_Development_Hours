@@ -1,9 +1,12 @@
 import os
+import json
+import re
 import shutil
 from PyPDF2 import PdfReader
 import pdfplumber
 import openai
 import pytesseract
+import openpyxl
 from PIL import Image, ImageEnhance, ImageOps  # 未來支援圖片上傳
 # custom modules
 from ..utils import functions as func
@@ -101,6 +104,11 @@ def extract_file_content(file_path, ocr_dpi=400):
 _BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 _PROMPT_PATH = os.path.join(_BACKEND_DIR, "promptList", "applicationInstruciton.txt")
 system_instructions = func.read_file_to_string(_PROMPT_PATH)
+
+_RELEVANCE_PROMPT_PATH = os.path.join(_BACKEND_DIR, "promptList", "relevance_scoring.txt")
+_ATTENDANCE_PROMPT_PATH = os.path.join(_BACKEND_DIR, "promptList", "attendance_scoring.txt")
+relevance_instructions = func.read_file_to_string(_RELEVANCE_PROMPT_PATH)
+attendance_instructions = func.read_file_to_string(_ATTENDANCE_PROMPT_PATH)
 
 
 # with files
@@ -211,3 +219,79 @@ def analyze_with_gpt_rag_mix(file_content, instruction):
 
     except Exception as e:
         return f"Error during GPT-RAG-MIX analysis: {e}"
+
+
+# attendance list extraction (pdf/xlsx)
+
+def extract_attendance_content(file_path):
+    ext = os.path.splitext(file_path)[-1].lower()
+    if ext == ".pdf":
+        return extract_file_content(file_path)
+    if ext == ".xlsx":
+        try:
+            wb = openpyxl.load_workbook(file_path, data_only=True)
+            parts = []
+            for sheet in wb.worksheets:
+                for row in sheet.iter_rows(values_only=True):
+                    row_vals = [str(v).strip() for v in row if v is not None and str(v).strip()]
+                    if row_vals:
+                        parts.append(" ".join(row_vals))
+            return "\n".join(parts).strip()
+        except Exception as e:
+            return f"Error processing xlsx: {e}"
+    return f"Unsupported file type: {ext}"
+
+
+# parse JSON from model output
+
+def _parse_json_response(text):
+    match = re.search(r"\{[\s\S]*\}", text or "")
+    if not match:
+        raise ValueError("Model response is not valid JSON")
+    return json.loads(match.group(0))
+
+
+# score relevance between explanation and evidence
+
+def score_relevance(relevance_text, evidence_text):
+    user_content = (
+        "Teaching growth description:\n"
+        + (relevance_text or "")
+        + "\n\n"
+        + "Evidence content:\n"
+        + (evidence_text or "")
+    )
+    response = openai.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": relevance_instructions},
+            {"role": "user", "content": user_content},
+        ],
+        temperature=0,
+        max_tokens=400,
+    )
+    content = response.choices[0].message.content if response.choices else ""
+    return _parse_json_response(content)
+
+
+# score attendance name match
+
+def score_attendance(name, evidence_text):
+    user_content = (
+        "Name provided:\n"
+        + (name or "")
+        + "\n\n"
+        + "Attendance list content:\n"
+        + (evidence_text or "")
+    )
+    response = openai.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": attendance_instructions},
+            {"role": "user", "content": user_content},
+        ],
+        temperature=0,
+        max_tokens=400,
+    )
+    content = response.choices[0].message.content if response.choices else ""
+    return _parse_json_response(content)

@@ -44,15 +44,7 @@
 
   <main class="container" role="main">
 
-    <section class="hero">
-      <div class="hero-text">
-        <h2>國立勤益科技大學 教師成長時數認證表線上申請</h2>
-        <p class="muted">提供教師填寫成長時數申請表，完成後交由學校流程審核。</p>
-      </div>
-      <div class="hero-cta">
-        <a class="btn primary" href="#form">開始填寫</a>
-      </div>
-    </section>
+    
 
     <!-- ===== Word 格式專用 PDF 表單 ===== -->
     <div id="pdfForm" style="font-family: 'Noto Sans TC', sans-serif;">
@@ -221,9 +213,16 @@
               <span class="lbl req">上傳等佐證參與活動資料（可多檔）</span>
               <div class="uploader">
                 <input id="files" type="file" multiple
-                       accept=".pdf,.jpg,.jpeg,.png,.heic,.doc,.docx" required>
+                       accept=".pdf" required>
                 <p class="muted">請至少上傳 1 份：證書影本、時數條或研習手冊封面影本。</p>
                 <ul id="fileList" class="file-list"></ul>
+                <div class="ai-score">
+                  <div class="ai-score-title">AI 相關度評分</div>
+                  <div class="ai-score-value" id="relevanceScoreValue">尚未評分</div>
+                  <button type="button" class="btn ghost" id="btnScoreOut">開始評分</button>
+                  <div class="ai-score-msg" id="relevanceScoreMsg"></div>
+                </div>
+
 
               </div>
             </div>

@@ -1,7 +1,18 @@
-window.API_BASE = window.API_BASE || "http://localhost:5000";
+window.API_BASE = window.API_BASE || "";
 
 const topbarUser = document.querySelector(".topbar-user");
 const logoutBtn = document.getElementById("btnLogoutTop");
+
+
+function toggleLoginLink(show) {
+  const links = Array.from(document.querySelectorAll('.topbar-link'));
+  links.forEach((link) => {
+    if (!(link instanceof HTMLElement)) return;
+    if ((link.getAttribute('href') || '').includes('admin.html') && link.textContent?.trim() === '??') {
+      link.style.display = show ? '' : 'none';
+    }
+  });
+}
 
 function setAvatar(user) {
   if (!topbarUser || !user) return;
@@ -38,6 +49,7 @@ async function guard() {
     const user = await fetchMe();
     window.__authUser = user;
     setAvatar(user);
+    toggleLoginLink(false);
     if (logoutBtn) {
       logoutBtn.classList.remove("is-hidden");
       logoutBtn.addEventListener("click", async () => {
@@ -51,6 +63,7 @@ async function guard() {
     return user;
   } catch (err) {
     if (logoutBtn) logoutBtn.classList.add("is-hidden");
+    toggleLoginLink(true);
     window.location.href = "admin.html";
     throw err;
   }

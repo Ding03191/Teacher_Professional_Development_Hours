@@ -4,6 +4,7 @@
 後端為 Flask API，資料存 SQLite，並使用 OpenAI 進行分析。
 
 ## 專案結構
+
 - `frontEnd/public/teacher.html`: 教師申請表（前端列印成 PDF）。
 - `frontEnd/public/teacher_in.html`: 校內活動表（前端驗證）。
 - `frontEnd/src/css`, `frontEnd/src/js`: 前端資源。
@@ -12,11 +13,13 @@
 - `backEnd/db/scoringHistory.sqlite`: 預設 SQLite 位置。
 
 ## 需求
+
 - 建議 Python 3.10+
 - 前端為靜態頁面，不需要 Node
 - OCR 相關系統套件（選用）：Tesseract + Poppler（`pdf2image` 用）
 
 ## 後端啟動（本機）
+
 ```powershell
 cd backEnd
 python -m venv .venv
@@ -31,6 +34,7 @@ python app.py
 後端會在 `http://localhost:5000` 啟動。
 
 ## Docker Compose（後端 + 前端）
+
 ```powershell
 Copy-Item .env.example .env
 # 編輯 .env，填入 SECRET_KEY / OPENAI_API_KEY
@@ -42,6 +46,7 @@ docker compose up --build
 - 管理頁：`http://localhost:8080/admin.html`（僅 root 可用）
 
 ## 前端使用
+
 - 直接開啟 `frontEnd/public/teacher.html` 使用教師申請表。
 - 直接開啟 `frontEnd/public/teacher_in.html` 使用校內活動表。
 - 直接開啟 `frontEnd/public/admin.html` 使用權限管理頁（需 root 登入）。
@@ -49,6 +54,7 @@ docker compose up --build
 前端為純前端流程，列印時用瀏覽器的列印功能輸出 PDF。
 
 ## 主要 API
+
 - `GET /`: 健康檢查
 - `GET /api/query_records?date=YYYY-MM-DD`: 依日期查詢紀錄
 - `POST /python-api/analyzeApplication`: 上傳檔案並進行 AI 分析
@@ -63,6 +69,7 @@ docker compose up --build
 - `DELETE /api/admin/users/{id}`: 刪除使用者（root）
 
 ## 環境變數
+
 - `SECRET_KEY`（必要）：Flask session secret
 - `OPENAI_API_KEY`（必要）：OpenAI API key
 - `MAX_UPLOAD_SIZE`（選用，bytes）：預設 10 MB
@@ -70,6 +77,7 @@ docker compose up --build
 - `DEPT_DEFAULT_PASSWORD`（選用）：單位預設密碼
 
 ## 備註
+
 - 上傳檔案會存放於 `backEnd/attachments`。
 - SQLite 資料表在第一次啟動時自動建立。
 - 角色包含 `teacher` / `staff` / `root`，root 擁有最高權限。

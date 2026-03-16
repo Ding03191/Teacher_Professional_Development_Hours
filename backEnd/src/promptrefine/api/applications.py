@@ -229,8 +229,8 @@ def upload_files(app_id: int):
         filename = secure_filename(f.filename or "")
         if not filename:
             continue
-        if not filename.lower().endswith(".pdf"):
-            return _err("only_pdf_allowed")
+        if not (filename.lower().endswith(".pdf") or filename.lower().endswith(".xlsx")):
+            return _err("only_pdf_or_xlsx_allowed")
         stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
         stored_name = f"{app_id}_{stamp}_{filename}"
         path = UPLOAD_DIR / stored_name

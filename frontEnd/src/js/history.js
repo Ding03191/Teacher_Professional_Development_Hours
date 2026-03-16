@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5000";
+const API_BASE = window.API_BASE || "";
 
 const historyList = document.getElementById("historyList");
 const historyMsg = document.getElementById("historyMsg");
@@ -19,6 +19,7 @@ const FIELD_DEFS = {
     { key: "hasCert", label: "是否核發研習證書", type: "text" },
     { key: "certNo", label: "證書字號", type: "text" },
     { key: "attachments", label: "附件清單", type: "array" },
+    { key: "evidenceLink", label: "????", type: "text" },
     { key: "domain", label: "鏈結領域", type: "array" },
     { key: "domainOther", label: "其他鏈結領域", type: "text" },
     { key: "sdg", label: "對接 SDGs 指標", type: "array" },

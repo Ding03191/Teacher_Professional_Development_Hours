@@ -1,20 +1,13 @@
 // teacher_in.js: 校內活動教師成長時數前端檢核與預覽
-const API_BASE = "http://localhost:5000";
+const API_BASE = window.API_BASE || "";
 const formIn = document.getElementById("formInCampus");
 const previewIn = document.getElementById("previewIn");
 const msgIn = document.getElementById("msgIn");
 const btnCheckIn = document.getElementById("btnCheckIn");
 const domainWrap = document.querySelector('[data-multi="domain"]');
 const sdgWrap = document.querySelector('[data-multi="sdg"]');
-const certNoField = document.getElementById("certNoField");
 const filesInputIn = document.getElementById("filesIn");
 const fileListIn = document.getElementById("fileListIn");
-
-function syncCertNoField(value) {
-  if (!certNoField) return;
-  const shouldShow = value === "yes";
-  certNoField.hidden = !shouldShow;
-}
 
 function getCheckedValues(container) {
   if (!container) return [];
@@ -102,14 +95,11 @@ function collectInCampusForm() {
     eventDate: fd.get("eventDate")?.toString().trim(),
     startTime: fd.get("startTime")?.toString().trim(),
     endTime: fd.get("endTime")?.toString().trim(),
-    hasCert: fd.get("hasCert"),
-    certNo: fd.get("certNo")?.toString().trim(),
     domain: getCheckedValues(domainWrap),
     domainOther: fd.get("domainOther")?.toString().trim(),
     sdg: getCheckedValues(sdgWrap),
     attachments: Array.from(filesInputIn?.files || []).map((f) => f.name),
-    purpose: fd.get("purpose")?.toString().trim(),
-    content: fd.get("content")?.toString().trim(),
+    evidenceLink: fd.get("evidenceLink")?.toString().trim(),
     teachingRelation: fd.get("teachingRelation")?.toString().trim(),
     researchRelation: fd.get("researchRelation")?.toString().trim(),
     applicant: fd.get("applicant")?.toString().trim(),
@@ -132,11 +122,8 @@ function validateInCampusForm(data) {
   if (data.startTime && data.endTime && data.startTime >= data.endTime) {
     errs.push("活動開始時間需早於結束時間");
   }
-  if (!data.hasCert) errs.push("請選擇是否核發證書");
   if (!data.domain || data.domain.length === 0) errs.push("請選擇至少一項「鏈結領域」");
   if (!data.sdg || data.sdg.length === 0) errs.push("請選擇至少一項「SDGs」");
-  if (!data.purpose) errs.push("請填寫「活動目的」");
-  if (!data.content) errs.push("請填寫「活動內容」");
   return errs;
 }
 
@@ -152,6 +139,9 @@ btnCheckIn?.addEventListener("click", () => {
   const errs = validateInCampusForm(data);
   if (errs.length) {
     msgIn.innerHTML = `<span style="color:#dc2626">${errs.join("<br>")}</span>`;
+    return;
+  }
+  if (!confirm("???????????????????????????")) {
     return;
   }
   msgIn.innerHTML = '<span style="color:#16a34a">送出中…</span>';
@@ -194,6 +184,7 @@ btnCheckIn?.addEventListener("click", () => {
         .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
         .then(({ ok, body }) => {
           if (!ok || body.ok === false) {
+            if (body.error === "only_pdf_or_xlsx_allowed") throw new Error("??? PDF ? Excel?xlsx????");
             throw new Error(body.error || "upload_failed");
           }
           msgIn.innerHTML =
@@ -212,12 +203,7 @@ formIn?.addEventListener("change", renderPreview);
 document.addEventListener("DOMContentLoaded", () => {
   initMultiSelect(domainWrap);
   initMultiSelect(sdgWrap);
-  syncCertNoField(formIn?.querySelector('input[name="hasCert"]:checked')?.value);
   renderPreview();
-
-  formIn
-    ?.querySelectorAll('input[name="hasCert"]')
-    .forEach((radio) => radio.addEventListener("change", () => syncCertNoField(radio.value)));
 });
 
 filesInputIn?.addEventListener("change", () => {
@@ -228,10 +214,4 @@ filesInputIn?.addEventListener("change", () => {
     li.textContent = `${i + 1}. ${f.name}`;
     fileListIn.appendChild(li);
   });
-});
-
-formIn?.addEventListener("change", (event) => {
-  if (event.target?.name === "hasCert") {
-    syncCertNoField(event.target.value);
-  }
 });

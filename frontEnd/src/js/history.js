@@ -8,54 +8,54 @@ const printArea = document.getElementById("printArea");
 
 const FIELD_DEFS = {
   in: [
-    { key: "organizerDept", label: "主辦單位", type: "text" },
-    { key: "eventName", label: "活動名稱", type: "text" },
-    { key: "hostName", label: "主(承)辦人員", type: "text" },
-    { key: "ext", label: "聯絡電話（校內分機）", type: "text" },
-    { key: "location", label: "活動地點", type: "text" },
-    { key: "eventDate", label: "活動日期", type: "date" },
-    { key: "startTime", label: "活動時間（起）", type: "time" },
-    { key: "endTime", label: "活動時間（迄）", type: "time" },
-    { key: "hasCert", label: "是否核發研習證書", type: "text" },
-    { key: "certNo", label: "證書字號", type: "text" },
-    { key: "attachments", label: "附件清單", type: "array" },
-    { key: "evidenceLink", label: "????", type: "text" },
-    { key: "domain", label: "鏈結領域", type: "array" },
-    { key: "domainOther", label: "其他鏈結領域", type: "text" },
-    { key: "sdg", label: "對接 SDGs 指標", type: "array" },
-    { key: "purpose", label: "一、活動主旨", type: "textarea" },
-    { key: "content", label: "二、詳細活動內容", type: "textarea" },
-    { key: "teachingRelation", label: "三、教學專業關係", type: "textarea" },
-    { key: "researchRelation", label: "四、研究專業關係", type: "textarea" },
-    { key: "applicant", label: "申請人（主辦人）", type: "text" },
-    { key: "deptHead", label: "申請單位主管", type: "text" },
-    { key: "staff", label: "處理人員", type: "text" },
-    { key: "lead", label: "教學資源組組長", type: "text" },
-    { key: "note", label: "其他備註", type: "textarea" },
+    { key: "organizerDept", label: "\u4e3b\u8fa6\u55ae\u4f4d", type: "text" },
+    { key: "eventName", label: "\u6d3b\u52d5\u540d\u7a31", type: "text" },
+    { key: "hostName", label: "\u4e3b(\u627f)\u8fa6\u4eba\u54e1", type: "text" },
+    { key: "ext", label: "\u806f\u7d61\u96fb\u8a71\uff08\u6821\u5167\u5206\u6a5f\uff09", type: "text" },
+    { key: "location", label: "\u6d3b\u52d5\u5730\u9ede", type: "text" },
+    { key: "eventDate", label: "\u6d3b\u52d5\u65e5\u671f", type: "date" },
+    { key: "startTime", label: "\u6d3b\u52d5\u6642\u9593\uff08\u958b\u59cb\uff09", type: "time" },
+    { key: "endTime", label: "\u6d3b\u52d5\u6642\u9593\uff08\u7d50\u675f\uff09", type: "time" },
+    { key: "hasCert", label: "\u662f\u5426\u6838\u767c\u8b49\u66f8", type: "text" },
+    { key: "certNo", label: "\u8b49\u66f8\u5b57\u865f", type: "text" },
+    { key: "attachments", label: "\u9644\u4ef6", type: "array" },
+    { key: "domain", label: "\u93c8\u7d50\u9818\u57df", type: "array" },
+    { key: "domainOther", label: "\u5176\u4ed6\u93c8\u7d50\u9818\u57df", type: "text" },
+    { key: "sdg", label: "SDGs \u6307\u6a19", type: "array" },
+    { key: "activityPurpose", label: "\u4e00\u3001\u6d3b\u52d5\u4e3b\u65e8", type: "textarea" },
+    { key: "activityDetail", label: "\u4e8c\u3001\u8a73\u7d30\u6d3b\u52d5\u5167\u5bb9", type: "textarea" },
+    { key: "teachingRelation", label: "\u4e09\u3001\u6d3b\u52d5\u8207\u63d0\u6617\u6559\u5e2b\u6559\u5b78\u5c08\u696d\u767c\u5c55\u4e4b\u95dc\u4fc2\uff08\u6559\u5b78\u5c08\u696d\uff09", type: "textarea" },
+    { key: "researchRelation", label: "\u56db\u3001\u6d3b\u52d5\u8207\u63d0\u6617\u6559\u5e2b\u7814\u7a76\u5c08\u696d\u767c\u5c55\u4e4b\u95dc\u4fc2\uff08\u7814\u7a76\u5c08\u696d\uff09", type: "textarea" },
+    { key: "applicant", label: "\u7533\u8acb\u4eba\uff08\u4e3b\u8fa6\u4eba\uff09", type: "text" },
+    { key: "deptHead", label: "\u7533\u8acb\u55ae\u4f4d\u4e3b\u7ba1", type: "text" },
+    { key: "staff", label: "\u8655\u7406\u4eba\u54e1", type: "text" },
+    { key: "lead", label: "\u6559\u5b78\u8cc7\u6e90\u7d44\u7d44\u9577", type: "text" },
+    { key: "note", label: "\u5176\u4ed6\u5099\u8a3b", type: "textarea" },
   ],
   out: [
-    { key: "teacherName", label: "教師姓名", type: "text" },
-    { key: "department", label: "任教單位", type: "text" },
-    { key: "teacherId", label: "教師編號", type: "text" },
-    { key: "ext", label: "聯絡分機", type: "text" },
-    { key: "eventDate", label: "活動日期", type: "date" },
-    { key: "startTime", label: "活動時間（起）", type: "time" },
-    { key: "endTime", label: "活動時間（迄）", type: "time" },
-    { key: "courseTitle", label: "活動課程名稱", type: "text" },
-    { key: "organizer", label: "舉辦單位", type: "text" },
-    { key: "relevance", label: "請具體舉證與專業成長之關係", type: "textarea" },
-    { key: "hasCert", label: "是否核發證書", type: "text" },
-    { key: "certNo", label: "證書字號", type: "text" },
-    { key: "attachments", label: "附件清單", type: "array" },
+    { key: "teacherName", label: "\u6559\u5e2b\u59d3\u540d", type: "text" },
+    { key: "department", label: "\u4efb\u6559\u55ae\u4f4d", type: "text" },
+    { key: "teacherId", label: "\u6559\u5e2b\u7de8\u865f", type: "text" },
+    { key: "ext", label: "\u806f\u7d61\u5206\u6a5f", type: "text" },
+    { key: "eventDate", label: "\u6d3b\u52d5\u65e5\u671f", type: "date" },
+    { key: "startTime", label: "\u6d3b\u52d5\u8d77\u8fc4\u6642\u9593\uff08\u958b\u59cb\uff09", type: "time" },
+    { key: "endTime", label: "\u6d3b\u52d5\u8d77\u8fc4\u6642\u9593\uff08\u7d50\u675f\uff09", type: "time" },
+    { key: "courseTitle", label: "\u6d3b\u52d5\u540d\u7a31", type: "text" },
+    { key: "organizer", label: "\u8209\u8fa6\u55ae\u4f4d", type: "text" },
+    { key: "relevance", label: "\u6559\u5b78\u5c08\u696d\u6210\u9577", type: "textarea" },
+    { key: "hasCert", label: "\u662f\u5426\u6838\u767c\u8b49\u66f8", type: "text" },
+    { key: "certNo", label: "\u8b49\u66f8\u5b57\u865f", type: "text" },
+    { key: "evidenceLink", label: "\u9644\u4e0a\u9023\u7d50", type: "text" },
+    { key: "attachments", label: "\u9644\u4ef6", type: "array" },
   ],
 };
 
 function fmtType(type) {
-  return type === "in" ? "校內" : "校外";
+  return type === "in" ? "\u6821\u5167" : "\u6821\u5916";
 }
 
 function arrToText(value) {
-  if (Array.isArray(value)) return value.join("、");
+  if (Array.isArray(value)) return value.join("\u3001");
   return value || "";
 }
 
@@ -73,7 +73,7 @@ function renderAttachmentsLinks(record) {
   if (!files.length) return "";
   const links = files
     .map((file, idx) => {
-      const name = file.name || `附件 ${idx + 1}`;
+      const name = file.name || `\u9644\u4ef6 ${idx + 1}`;
       return `<a class="attachment-link" href="${API_BASE}/api/applications/${record.id}/files/${idx}" target="_blank" rel="noopener">${name}</a>`;
     })
     .join("");
@@ -84,8 +84,7 @@ function renderDetailForm(record) {
   const defs = FIELD_DEFS[record.app_type] || [];
   const rows = defs
     .map((def) => {
-      const extra =
-        def.key === "attachments" ? renderAttachmentsLinks(record) : "";
+      const extra = def.key === "attachments" ? renderAttachmentsLinks(record) : "";
       return `
         <label class="field">
           <span class="lbl">${def.label}</span>
@@ -101,9 +100,9 @@ function renderDetailForm(record) {
         ${rows}
       </div>
       <div class="detail-actions">
-        <button type="button" class="btn ghost" data-action="export" data-id="${record.id}">匯出 PDF</button>
-        <button type="button" class="btn ghost" data-action="delete" data-id="${record.id}">刪除</button>
-        <button type="submit" class="btn primary">儲存修改</button>
+        <button type="button" class="btn ghost" data-action="export" data-id="${record.id}">\u532f\u51fa PDF</button>
+        <button type="button" class="btn ghost" data-action="delete" data-id="${record.id}">\u522a\u9664</button>
+        <button type="submit" class="btn primary">\u66f4\u65b0</button>
       </div>
     </form>
   `;
@@ -113,7 +112,7 @@ function renderList(records) {
   if (!historyList) return;
   historyList.innerHTML = "";
   if (!records.length) {
-    historyList.innerHTML = `<div class="muted">目前沒有紀錄。</div>`;
+    historyList.innerHTML = `<div class="muted">\u76ee\u524d\u6c92\u6709\u7d00\u9304\u3002</div>`;
     return;
   }
   records.forEach((record) => {
@@ -166,7 +165,7 @@ function normalizeFormData(form, appType) {
     const raw = (fd.get(def.key) || "").toString().trim();
     if (def.type === "array") {
       data[def.key] = raw
-        ? raw.split(/[，,]/).map((v) => v.trim()).filter(Boolean)
+        ? raw.split(/[\u3001,]/).map((v) => v.trim()).filter(Boolean)
         : [];
     } else {
       data[def.key] = raw;
@@ -200,19 +199,19 @@ function buildPrintHtml(record) {
     .join("");
   return `
     <div class="print-sheet">
-      <h2>申請紀錄（${fmtType(record.app_type)}）</h2>
-      <div class="print-meta">申請單位：${record.unit_name || "-"}　　日期：${record.event_date || "-"}</div>
+      <h2>\u7533\u8acb\u7d00\u9304\uff1a${fmtType(record.app_type)}</h2>
+      <div class="print-meta">\u55ae\u4f4d\uff1a${record.unit_name || "-"} \u2022 \u6d3b\u52d5\u65e5\u671f\uff1a${record.event_date || "-"}</div>
       <div class="print-block">
         ${rows}
       </div>
       <div class="print-only">
-        <h3>簽章與備註（列印後簽名）</h3>
+        <h3>\u7c3d\u7ae0\u6b04\u4f4d</h3>
         <div class="print-sign">
-          <div>申請人（主辦人）________________</div>
-          <div>申請單位主管________________</div>
-          <div>處理人員________________</div>
-          <div>教學資源組組長________________</div>
-          <div>其他備註：________________________________</div>
+          <div>\u7533\u8acb\u4eba________________</div>
+          <div>\u55ae\u4f4d\u4e3b\u7ba1________________</div>
+          <div>\u8655\u7406\u4eba\u54e1________________</div>
+          <div>\u6559\u5b78\u8cc7\u6e90\u7d44\u7d44\u9577________________</div>
+          <div>\u5099\u8a3b\uff1a_______________________________</div>
         </div>
       </div>
     </div>
@@ -261,35 +260,19 @@ historyList?.addEventListener("click", async (event) => {
   const action = target.dataset.action;
   const id = target.dataset.id;
   if (!action || !id) return;
+
+  if (action === "export") {
+    const record = await api(`/api/applications/${id}`);
+    injectPrint(record);
+    window.print();
+    return;
+  }
+
   if (action === "delete") {
-    if (!confirm("確定要刪除此筆紀錄嗎？")) return;
+    if (!confirm("\u78ba\u8a8d\u8981\u522a\u9664\u9019\u7b46\u7d00\u9304\u55ce\uff1f")) return;
     try {
       await api(`/api/applications/${id}`, { method: "DELETE" });
       await loadApplications(getActiveType());
-    } catch (err) {
-      if (historyMsg) historyMsg.textContent = err.message;
-    }
-  }
-  if (action === "export") {
-    const item = target.closest(".history-item");
-    const appType = item?.querySelector(".history-badge")?.classList.contains("in") ? "in" : "out";
-    const form = item?.querySelector(".detail-form");
-    const data = form ? normalizeFormData(form, appType) : {};
-    const record = {
-      id,
-      app_type: appType,
-      unit_name: item?.querySelector(".history-summary .muted:last-child")?.textContent || "",
-      event_date: data.eventDate || "",
-      data,
-    };
-    try {
-      const res = await fetch(`${API_BASE}/api/applications/${id}/print`, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("print_failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
     } catch (err) {
       if (historyMsg) historyMsg.textContent = err.message;
     }
@@ -304,17 +287,6 @@ tabs.forEach((tab) => {
   });
 });
 
-btnRefresh?.addEventListener("click", async () => {
-  await loadApplications(getActiveType());
-});
+btnRefresh?.addEventListener("click", () => loadApplications(getActiveType()));
 
-document.addEventListener("DOMContentLoaded", async () => {
-  if (window.__authUserPromise) {
-    try {
-      await window.__authUserPromise;
-    } catch {
-      return;
-    }
-  }
-  await loadApplications(getActiveType());
-});
+document.addEventListener("DOMContentLoaded", () => loadApplications(getActiveType()));

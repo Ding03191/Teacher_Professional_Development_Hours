@@ -10,20 +10,25 @@ const appbarActions = document.querySelector(".appbar-actions");
 const unitSelect = document.getElementById("unitSelect");
 const topbarUser = document.querySelector(".topbar-user");
 const logoutBtnTop = document.getElementById("btnLogoutTop");
+const topbarLoginLink = document.getElementById("topbarLoginLink");
+const topbarSettingsLink = document.getElementById("topbarSettingsLink");
+const topbarAccount = document.getElementById("topbarAccount");
 
 function setAvatar(user) {
   if (!topbarUser || !user) return;
   topbarUser.classList.remove("role-root", "role-dept");
   if (user.role === "root") {
-    topbarUser.textContent = "管";
-    topbarUser.title = "教學資源組";
+    topbarUser.textContent = "\u7ba1";
+    topbarUser.title = "\u6559\u5b78\u8cc7\u6e90\u7d44";
     topbarUser.classList.add("role-root");
+    if (topbarAccount) topbarAccount.textContent = user.account || user.name || "root";
     return;
   }
   const name = user.unit_name || user.name || user.account || user.email || "U";
   topbarUser.textContent = name.slice(0, 2);
   topbarUser.title = name;
   topbarUser.classList.add("role-dept");
+  if (topbarAccount) topbarAccount.textContent = name;
 }
 
 const createForm = document.getElementById("createForm");
@@ -61,6 +66,8 @@ async function checkMe() {
     show(appbarActions);
     show(btnLogout);
     logoutBtnTop?.classList.remove("is-hidden");
+    topbarLoginLink?.classList.add("is-hidden");
+    topbarSettingsLink?.classList.remove("is-hidden");
     setAvatar(user);
     if (user.role === "root") {
       show(adminPanel);
@@ -76,6 +83,8 @@ async function checkMe() {
     hide(appbarActions);
     hide(btnLogout);
     logoutBtnTop?.classList.add("is-hidden");
+    topbarLoginLink?.classList.remove("is-hidden");
+    topbarSettingsLink?.classList.add("is-hidden");
   }
 }
 

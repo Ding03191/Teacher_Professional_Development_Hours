@@ -1,93 +1,91 @@
-// teacher.js：教師成長時數前端送出
 const API_BASE = window.API_BASE || "";
-// DOM 元素
-const formT      = document.getElementById('formTeacher');
-const filesInput = document.getElementById('files');
-const fileList   = document.getElementById('fileList');
-const msgEl      = document.getElementById('msg');
-const certNoBox  = document.getElementById('certNoBox');
-const relevanceScoreValue = document.getElementById('relevanceScoreValue');
-const relevanceScoreMsg = document.getElementById('relevanceScoreMsg');
-const btnScoreOut = document.getElementById('btnScoreOut');
 
-// 是否核發證書 → 顯示 / 隱藏「證書字號」
-formT?.addEventListener('change', e => {
-  if (e.target.name === 'hasCert') {
-    certNoBox.classList.toggle('is-hidden', e.target.value !== 'yes');
+const formT = document.getElementById("formTeacher");
+const filesInput = document.getElementById("files");
+const fileList = document.getElementById("fileList");
+const msgEl = document.getElementById("msg");
+const certNoBox = document.getElementById("certNoBox");
+
+function setMsg(type, text) {
+  if (!msgEl) return;
+  const color = type === "error" ? "#dc2626" : "#16a34a";
+  msgEl.innerHTML = `<span style="color:${color}">${text}</span>`;
+}
+
+formT?.addEventListener("change", (e) => {
+  const target = e.target;
+  if (target?.name === "hasCert") {
+    certNoBox?.classList.toggle("is-hidden", target.value !== "yes");
   }
 });
 
-// 附件清單顯示
-filesInput?.addEventListener('change', () => {
-  fileList.innerHTML = '';
+filesInput?.addEventListener("change", () => {
+  if (!fileList) return;
+  fileList.innerHTML = "";
   Array.from(filesInput.files || []).forEach((f, i) => {
-    const li = document.createElement('li');
+    const li = document.createElement("li");
     li.textContent = `${i + 1}. ${f.name} (${Math.round(f.size / 1024)} KB)`;
     fileList.appendChild(li);
   });
 });
 
-// 收集表單資料 → 給預覽 & 匯出用
 function collectTeacherForm() {
   const fd = new FormData(formT);
   return {
-    teacherName: fd.get('teacherName')?.toString().trim(),
-    department:  fd.get('department')?.toString().trim(),
-    teacherId:   fd.get('teacherId')?.toString().trim(),
-    ext:         fd.get('ext')?.toString().trim() || '',
-    eventDate:   fd.get('eventDate'),
-    startTime:   fd.get('startTime'),
-    endTime:     fd.get('endTime'),
-    courseTitle: fd.get('courseTitle')?.toString().trim(),
-    organizer:   fd.get('organizer')?.toString().trim(),
-    relevance:   fd.get('relevance')?.toString().trim(),
-    hasCert:     fd.get('hasCert'),
-    certNo:      (fd.get('hasCert') === 'yes'
-                  ? (fd.get('certNo')?.toString().trim() || '')
-                  : ''),
+    teacherName: fd.get("teacherName")?.toString().trim(),
+    department: fd.get("department")?.toString().trim(),
+    teacherId: fd.get("teacherId")?.toString().trim(),
+    ext: fd.get("ext")?.toString().trim() || "",
+    eventDate: fd.get("eventDate"),
+    startTime: fd.get("startTime"),
+    endTime: fd.get("endTime"),
+    courseTitle: fd.get("courseTitle")?.toString().trim(),
+    organizer: fd.get("organizer")?.toString().trim(),
+    relevance: fd.get("relevance")?.toString().trim(),
+    evidenceLink: fd.get("evidenceLink")?.toString().trim(),
+    hasCert: fd.get("hasCert"),
+    certNo:
+      fd.get("hasCert") === "yes"
+        ? fd.get("certNo")?.toString().trim() || ""
+        : "",
     attachments: Array.from(filesInput?.files || []).map((f) => f.name),
-    attachmentCount: filesInput?.files?.length || 0
+    attachmentCount: filesInput?.files?.length || 0,
   };
 }
 
-// 簡易欄位檢查
 function validateTeacher() {
   const d = collectTeacherForm();
   const errs = [];
-  if (!d.teacherName) errs.push('請填寫「教師姓名」。');
-  if (!d.department)  errs.push('請填寫「任教單位」。');
-  if (!d.teacherId)   errs.push('請填寫「教師編號」。');
-  if (!d.eventDate)   errs.push('請選擇「活動日期」。');
-  if (!d.startTime || !d.endTime) errs.push('請填寫「活動起訖時間」。');
-  if (d.startTime && d.endTime && d.startTime >= d.endTime)
-    errs.push('起訖時間不合理。');
-  if (!d.courseTitle) errs.push('請填寫「課程名稱」。');
-  if (!d.organizer)   errs.push('請填寫「舉辦單位」。');
-  if (!d.relevance)   errs.push('請填寫「關聯說明」。');
-  if (!d.hasCert)     errs.push('請選擇是否核發證書。');
-  if (d.hasCert === 'yes' && !d.certNo)
-    errs.push('已選「是」，請填「證書字號」。');
-  if (!d.attachmentCount)
-    errs.push('請至少上傳 1 份佐證附件。');
-
+  if (!d.teacherName) errs.push("\u8acb\u8f38\u5165\u6559\u5e2b\u59d3\u540d\u3002");
+  if (!d.department) errs.push("\u8acb\u8f38\u5165\u4efb\u6559\u55ae\u4f4d\u3002");
+  if (!d.teacherId) errs.push("\u8acb\u8f38\u5165\u6559\u5e2b\u7de8\u865f\u3002");
+  if (!d.eventDate) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u65e5\u671f\u3002");
+  if (!d.startTime || !d.endTime) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u6642\u9593\u3002");
+  if (d.startTime && d.endTime && d.startTime >= d.endTime) {
+    errs.push("\u7d50\u675f\u6642\u9593\u9700\u665a\u65bc\u958b\u59cb\u6642\u9593\u3002");
+  }
+  if (!d.courseTitle) errs.push("\u8acb\u8f38\u5165\u6d3b\u52d5\u540d\u7a31\u3002");
+  if (!d.organizer) errs.push("\u8acb\u8f38\u5165\u8209\u8fa6\u55ae\u4f4d\u3002");
+  if (!d.relevance) errs.push("\u8acb\u586b\u5beb\u6559\u5b78\u5c08\u696d\u6210\u9577\u3002");
+  if (!d.hasCert) errs.push("\u8acb\u9078\u64c7\u662f\u5426\u6838\u767c\u8b49\u66f8\u3002");
+  if (d.hasCert === "yes" && !d.certNo) errs.push("\u8acb\u8f38\u5165\u8b49\u66f8\u5b57\u865f\u3002");
+  if (!d.attachmentCount) errs.push("\u8acb\u81f3\u5c11\u4e0a\u50b3 1 \u4efd\u9644\u4ef6\u3002");
   return errs;
 }
 
-// 「前端檢查」按鈕
-formT?.addEventListener('submit', e => {
+formT?.addEventListener("submit", (e) => {
   e.preventDefault();
-  msgEl.textContent = '';
+  msgEl.textContent = "";
   const errs = validateTeacher();
   if (errs.length) {
-    msgEl.innerHTML =
-      '<span style=\"color:#dc2626\">' + errs.join('<br>') + '</span>';
+    msgEl.innerHTML = `<span style="color:#dc2626">${errs.join("<br>")}</span>`;
     return;
   }
-  if (!confirm('???????????????????????????')) {
-    return;
-  }
-  msgEl.innerHTML = '<span style="color:#16a34a">送出中…</span>';
+  if (!confirm("\u78ba\u8a8d\u8981\u9001\u51fa\u7533\u8acb\u55ce\uff1f")) return;
+
+  setMsg("success", "\u9001\u51fa\u4e2d\uff0c\u8acb\u7a0d\u5019\u2026");
   const data = collectTeacherForm();
+
   fetch(`${API_BASE}/api/applications`, {
     method: "POST",
     credentials: "include",
@@ -104,17 +102,12 @@ formT?.addEventListener('submit', e => {
   })
     .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
     .then(({ ok, body }) => {
-      if (!ok || body.ok === false) {
-        throw new Error(body.error || "submit_failed");
-      }
+      if (!ok || body.ok === false) throw new Error(body.error || "submit_failed");
       const appId = body.data?.id;
       const files = Array.from(filesInput?.files || []);
       if (!appId || files.length === 0) {
-        msgEl.innerHTML =
-          '<span style="color:#16a34a">送出成功，將前往歷史記錄。</span>';
-        setTimeout(() => {
-          window.location.href = "history.html";
-        }, 300);
+        setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
+        setTimeout(() => (window.location.href = "history.html"), 300);
         return;
       }
       const fd = new FormData();
@@ -127,59 +120,53 @@ formT?.addEventListener('submit', e => {
         .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
         .then(({ ok, body }) => {
           if (!ok || body.ok === false) {
-            if (body.error === "only_pdf_or_xlsx_allowed") throw new Error("??? PDF ? Excel?xlsx????");
-          throw new Error(body.error || "upload_failed");
+            if (body.error === "only_pdf_or_xlsx_allowed") {
+              throw new Error("\u53ea\u652f\u63f4 PDF \u6216 Excel\uff08.xlsx\uff09\u6a94\u6848\u3002");
+            }
+            throw new Error(body.error || "upload_failed");
           }
-          msgEl.innerHTML =
-            '<span style="color:#16a34a">送出成功，將前往歷史記錄。</span>';
-          setTimeout(() => {
-            window.location.href = "history.html";
-          }, 300);
+          setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
+          setTimeout(() => (window.location.href = "history.html"), 300);
         });
     })
-    .catch((err) => {
-      msgEl.innerHTML = `<span style="color:#dc2626">${err.message}</span>`;
-    });
+    .catch((err) => setMsg("error", err.message));
 });
 
-/* ========= 填入「Word 表格版」PDF 表單內容 ========= */
 function fillPdfForm(d) {
   const setText = (id, value) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = value || '';
+    if (el) el.textContent = value || "";
   };
 
-  setText('pdf_teacherName', d.teacherName);
-  setText('pdf_department',  d.department);
-  setText('pdf_teacherId',   d.teacherId);
-  setText('pdf_ext',         d.ext);
+  setText("pdf_teacherName", d.teacherName);
+  setText("pdf_department", d.department);
+  setText("pdf_teacherId", d.teacherId);
+  setText("pdf_ext", d.ext);
+  setText("pdf_eventDate", d.eventDate);
+  setText("pdf_start", d.startTime);
+  setText("pdf_end", d.endTime);
+  setText("pdf_courseTitle", d.courseTitle);
+  setText("pdf_organizer", d.organizer);
+  setText("pdf_relevance", d.relevance);
 
-  setText('pdf_eventDate',   d.eventDate);
-  setText('pdf_start',       d.startTime);
-  setText('pdf_end',         d.endTime);
+  let hasCertText = "";
+  if (d.hasCert === "yes") hasCertText = "\u662f";
+  else if (d.hasCert === "no") hasCertText = "\u5426";
+  setText("pdf_hasCert", hasCertText);
 
-  setText('pdf_courseTitle', d.courseTitle);
-  setText('pdf_organizer',   d.organizer);
-  setText('pdf_relevance',   d.relevance);
-
-  // 是否核發證書＋字號
-  let hasCertText = '';
-  if (d.hasCert === 'yes') hasCertText = '是';
-  else if (d.hasCert === 'no') hasCertText = '否';
-  setText('pdf_hasCert', hasCertText);
-
-  setText('pdf_certNo', d.hasCert === 'yes' && d.certNo
-    ? `證書字號：${d.certNo}`
-    : ''
+  setText(
+    "pdf_certNo",
+    d.hasCert === "yes" && d.certNo ? `\u8b49\u66f8\u5b57\u865f\uff1a${d.certNo}` : ""
   );
 
-  // 附件清單
-  const filesEl = document.getElementById('pdf_files');
+  const filesEl = document.getElementById("pdf_files");
   if (filesEl) {
-    const list = Array.from(filesInput.files || [])
+    const list = Array.from(filesInput?.files || [])
       .map((f, i) => `${i + 1}. ${f.name}`)
-      .join('\n');
-    filesEl.textContent = list || '（無附件）';
+      .join("\n");
+    filesEl.textContent = list || "\uff08\u7121\u9644\u4ef6\uff09";
   }
 }
 
+// expose for other scripts if needed
+window.fillPdfForm = fillPdfForm;

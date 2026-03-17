@@ -13,8 +13,9 @@
       <div class="layout-title">國立勤益科技大學教師成長時數平台</div>
       <div class="topbar-actions">
         <span class="topbar-user" aria-hidden="true">◎</span>
-        <a class="topbar-link" href="admin.html">登入</a>
-        <a class="topbar-link" href="admin.html">設定</a>
+        <span id="topbarAccount" class="topbar-account"></span>
+        <a id="topbarLoginLink" class="topbar-link" href="admin.html">登入</a>
+        <a id="topbarSettingsLink" class="topbar-link is-hidden" href="admin.html">設定</a>
         <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
       </div>
     </header>
@@ -100,22 +101,8 @@
                 
                 
               </div>
-            </form>
           </div>
         </article>
-
-        <article class="card" style="margin-top:16px;">
-          <div class="card-hd">上傳附件（PDF）</div>
-          <div class="card-bd">
-            <div class="field">
-              <span class="lbl">上傳佐證資料（可多檔）</span>
-              <input id="filesIn" type="file" multiple accept=".pdf">
-              <ul id="fileListIn" class="file-list"></ul>
-              <p class="muted">僅支援 PDF 檔案。</p>
-            </div>
-          </div>
-        </article>
-
         <article class="card card-allow-overflow" style="margin-top:16px;">
           <div class="card-hd">鏈結領域 & SDGs 指標</div>
           <div class="card-bd">
@@ -197,29 +184,46 @@
           <div class="card-bd">
             <div class="grid">
               <label class="field">
-                <span class="lbl">活動與提昗教師教學專業發展之關係（教學專業）</span>
+                <span class="lbl">一、活動主旨 <span class="req">*</span></span>
+                <textarea name="activityPurpose" placeholder="請說明本活動的主要目的、期待成效..." required></textarea>
+              </label>
+
+              <label class="field">
+                <span class="lbl">二、詳細活動內容 <span class="req">*</span></span>
+                <textarea name="activityDetail" placeholder="請包含活動辦理方式、主講者、來賓、重要議程或內容說明等。" required></textarea>
+              </label>
+
+              <label class="field">
+                <span class="lbl">三、活動與提昗教師教學專業發展之關係（教學專業）</span>
                 <textarea name="teachingRelation" placeholder="例如：對教學方法、課程設計、教學評量或教學素養的提升說明。"></textarea>
               </label>
 
               <label class="field">
-                <span class="lbl">活動與提昗教師研究專業發展之關係（研究專業）</span>
-                <textarea name="researchRelation" placeholder="例如：對研究方法、實驗技巧、研究議題或學術專業發展的幫助…"></textarea>
+                <span class="lbl">四、活動與提昗教師研究專業發展之關係（研究專業）</span>
+                <textarea name="researchRelation" placeholder="例如：對研究方法、實驗技巧、研究議題或學術專業發展的幫助..."></textarea>
               </label>
 
-              <p class="muted">以上可擇一填寫。</p>
+              <p class="muted">備註：三、四項依活動性質，至少擇一詳實填寫。</p>
             </div>
           </div>
         </article>
 
         <!-- 醒目提醒 -->
-        <div class="important-tip">
-          <strong>最後步驟提醒：</strong>
-          <span>
-            活動結束後，請將本表匯出並列印，連同簽到單影本一併送至教學資源組，方完成時數認證申請。
-          </span>
-        </div>
+        
 
-        <div id="msgIn" class="msg"></div>
+        <article class="card" style="margin-top:16px;">
+          <div class="card-hd">上傳附件（PDF或 Excel）</div>
+          <div class="card-bd">
+            <div class="field">
+              <span class="lbl">上傳佐證資料（可多檔）</span>
+              <input id="filesIn" type="file" multiple accept=".pdf,.xls,.xlsx">
+              <ul id="fileListIn" class="file-list"></ul>
+              <p class="muted">僅支援 PDF 或 Excel 檔案。</p>
+            </div>
+          </div>
+        </article>
+</form>
+<div id="msgIn" class="msg"></div>
         <div class="actions">
           <button type="button" class="btn primary" id="btnCheckIn">送出</button>
         </div>

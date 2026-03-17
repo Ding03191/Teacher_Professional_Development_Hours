@@ -2,17 +2,30 @@ window.API_BASE = window.API_BASE || "";
 
 const topbarUser = document.querySelector(".topbar-user");
 const logoutBtn = document.getElementById("btnLogoutTop");
+const topbarLoginLink = document.getElementById("topbarLoginLink");
+const topbarSettingsLink = document.getElementById("topbarSettingsLink");
+const topbarAccount = document.getElementById("topbarAccount");
 
+function getTopbarLinks() {
+  const loginText = "\u767b\u5165";
+  const settingsText = "\u8a2d\u5b9a";
+  let login = topbarLoginLink;
+  let settings = topbarSettingsLink;
 
-function toggleLoginLink(show) {
-  const links = Array.from(document.querySelectorAll('.topbar-link'));
-  links.forEach((link) => {
-    if (!(link instanceof HTMLElement)) return;
-    if ((link.getAttribute('href') || '').includes('admin.html') && link.textContent?.trim() === '??') {
-      link.style.display = show ? '' : 'none';
+  if (!login || !settings) {
+    const links = Array.from(document.querySelectorAll(".topbar-link"));
+    for (const link of links) {
+      if (!(link instanceof HTMLElement)) continue;
+      const text = (link.textContent || "").trim();
+      if (!login && text === loginText) login = link;
+      if (!settings && text === settingsText) settings = link;
     }
-  });
+  }
+
+  return { login, settings };
 }
+
+
 
 function setAvatar(user) {
   if (!topbarUser || !user) return;
@@ -20,14 +33,16 @@ function setAvatar(user) {
   topbarUser.classList.remove("role-root", "role-dept");
 
   if (user.role === "root") {
-    label = "管";
+    label = "\u7ba1";
     topbarUser.classList.add("role-root");
-    topbarUser.title = "教學資源組";
+    topbarUser.title = "\u6559\u5b78\u8cc7\u6e90\u7d44";
+    if (topbarAccount) topbarAccount.textContent = user.account || user.name || "root";
   } else {
     const name = user.unit_name || user.name || user.account || user.email || "U";
     label = name.slice(0, 2);
     topbarUser.classList.add("role-dept");
     topbarUser.title = name;
+    if (topbarAccount) topbarAccount.textContent = name;
   }
 
   topbarUser.textContent = label;
@@ -49,7 +64,9 @@ async function guard() {
     const user = await fetchMe();
     window.__authUser = user;
     setAvatar(user);
-    toggleLoginLink(false);
+    const { login, settings } = getTopbarLinks();
+    login?.classList.add("is-hidden");
+    settings?.classList.remove("is-hidden");
     if (logoutBtn) {
       logoutBtn.classList.remove("is-hidden");
       logoutBtn.addEventListener("click", async () => {
@@ -63,7 +80,9 @@ async function guard() {
     return user;
   } catch (err) {
     if (logoutBtn) logoutBtn.classList.add("is-hidden");
-    toggleLoginLink(true);
+    const { login, settings } = getTopbarLinks();
+    login?.classList.remove("is-hidden");
+    settings?.classList.add("is-hidden");
     window.location.href = "admin.html";
     throw err;
   }

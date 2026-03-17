@@ -1,5 +1,5 @@
-// teacher_in.js: 校內活動教師成長時數前端檢核與預覽
 const API_BASE = window.API_BASE || "";
+
 const formIn = document.getElementById("formInCampus");
 const previewIn = document.getElementById("previewIn");
 const msgIn = document.getElementById("msgIn");
@@ -8,6 +8,12 @@ const domainWrap = document.querySelector('[data-multi="domain"]');
 const sdgWrap = document.querySelector('[data-multi="sdg"]');
 const filesInputIn = document.getElementById("filesIn");
 const fileListIn = document.getElementById("fileListIn");
+
+function setMsg(type, text) {
+  if (!msgIn) return;
+  const color = type === "error" ? "#dc2626" : "#16a34a";
+  msgIn.innerHTML = `<span style="color:${color}">${text}</span>`;
+}
 
 function getCheckedValues(container) {
   if (!container) return [];
@@ -43,7 +49,9 @@ function updateMultiSelectDisplay(container) {
 
   placeholder.hidden = true;
   valueEl.hidden = false;
-  valueEl.textContent = labels.length <= 3 ? labels.join("、") : `已選 ${labels.length} 項`;
+  valueEl.textContent = labels.length <= 3
+    ? labels.join("\u3001")
+    : `\u5df2\u9078\u64c7 ${labels.length} \u9805`;
 }
 
 function initMultiSelect(container) {
@@ -98,8 +106,8 @@ function collectInCampusForm() {
     domain: getCheckedValues(domainWrap),
     domainOther: fd.get("domainOther")?.toString().trim(),
     sdg: getCheckedValues(sdgWrap),
-    attachments: Array.from(filesInputIn?.files || []).map((f) => f.name),
-    evidenceLink: fd.get("evidenceLink")?.toString().trim(),
+    activityPurpose: fd.get("activityPurpose")?.toString().trim(),
+    activityDetail: fd.get("activityDetail")?.toString().trim(),
     teachingRelation: fd.get("teachingRelation")?.toString().trim(),
     researchRelation: fd.get("researchRelation")?.toString().trim(),
     applicant: fd.get("applicant")?.toString().trim(),
@@ -107,23 +115,28 @@ function collectInCampusForm() {
     staff: fd.get("staff")?.toString().trim(),
     lead: fd.get("lead")?.toString().trim(),
     note: fd.get("note")?.toString().trim(),
+    attachments: Array.from(filesInputIn?.files || []).map((f) => f.name),
+    attachmentCount: filesInputIn?.files?.length || 0,
   };
 }
 
 function validateInCampusForm(data) {
   const errs = [];
-  if (!data.organizerDept) errs.push("請填寫「主辦單位」");
-  if (!data.eventName) errs.push("請填寫「活動名稱」");
-  if (!data.hostName) errs.push("請填寫「承辦人」");
-  if (!data.ext) errs.push("請填寫「聯絡電話」");
-  if (!data.location) errs.push("請填寫「活動地點」");
-  if (!data.eventDate) errs.push("請選擇「活動日期」");
-  if (!data.startTime || !data.endTime) errs.push("請填寫活動時間");
+  if (!data.organizerDept) errs.push("\u8acb\u8f38\u5165\u4e3b\u8fa6\u55ae\u4f4d\u3002");
+  if (!data.eventName) errs.push("\u8acb\u8f38\u5165\u6d3b\u52d5\u540d\u7a31\u3002");
+  if (!data.hostName) errs.push("\u8acb\u8f38\u5165\u4e3b(\u627f)\u8fa6\u4eba\u54e1\u3002");
+  if (!data.ext) errs.push("\u8acb\u8f38\u5165\u806f\u7d61\u5206\u6a5f\u3002");
+  if (!data.location) errs.push("\u8acb\u8f38\u5165\u6d3b\u52d5\u5730\u9ede\u3002");
+  if (!data.eventDate) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u65e5\u671f\u3002");
+  if (!data.startTime || !data.endTime) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u6642\u9593\u3002");
   if (data.startTime && data.endTime && data.startTime >= data.endTime) {
-    errs.push("活動開始時間需早於結束時間");
+    errs.push("\u7d50\u675f\u6642\u9593\u9700\u665a\u65bc\u958b\u59cb\u6642\u9593\u3002");
   }
-  if (!data.domain || data.domain.length === 0) errs.push("請選擇至少一項「鏈結領域」");
-  if (!data.sdg || data.sdg.length === 0) errs.push("請選擇至少一項「SDGs」");
+  if (!data.domain || data.domain.length === 0) errs.push("\u8acb\u9078\u64c7\u81f3\u5c11\u4e00\u9805\u93c8\u7d50\u9818\u57df\u3002");
+  if (!data.sdg || data.sdg.length === 0) errs.push("\u8acb\u9078\u64c7\u81f3\u5c11\u4e00\u9805 SDGs \u6307\u6a19\u3002");
+  if (!data.activityPurpose) errs.push("\u8acb\u586b\u5beb\u6d3b\u52d5\u4e3b\u65e8\u3002");
+  if (!data.activityDetail) errs.push("\u8acb\u586b\u5beb\u8a73\u7d30\u6d3b\u52d5\u5167\u5bb9\u3002");
+  if (!data.attachmentCount) errs.push("\u8acb\u81f3\u5c11\u4e0a\u50b3 1 \u4efd\u9644\u4ef6\u3002");
   return errs;
 }
 
@@ -141,10 +154,10 @@ btnCheckIn?.addEventListener("click", () => {
     msgIn.innerHTML = `<span style="color:#dc2626">${errs.join("<br>")}</span>`;
     return;
   }
-  if (!confirm("???????????????????????????")) {
-    return;
-  }
-  msgIn.innerHTML = '<span style="color:#16a34a">送出中…</span>';
+  if (!confirm("\u78ba\u8a8d\u8981\u9001\u51fa\u7533\u8acb\u55ce\uff1f")) return;
+
+  setMsg("success", "\u9001\u51fa\u4e2d\uff0c\u8acb\u7a0d\u5019\u2026");
+
   fetch(`${API_BASE}/api/applications`, {
     method: "POST",
     credentials: "include",
@@ -161,17 +174,12 @@ btnCheckIn?.addEventListener("click", () => {
   })
     .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
     .then(({ ok, body }) => {
-      if (!ok || body.ok === false) {
-        throw new Error(body.error || "submit_failed");
-      }
+      if (!ok || body.ok === false) throw new Error(body.error || "submit_failed");
       const appId = body.data?.id;
       const files = Array.from(filesInputIn?.files || []);
       if (!appId || files.length === 0) {
-        msgIn.innerHTML =
-          '<span style="color:#16a34a">送出成功，將前往歷史記錄。</span>';
-        setTimeout(() => {
-          window.location.href = "history.html";
-        }, 300);
+        setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
+        setTimeout(() => (window.location.href = "history.html"), 300);
         return;
       }
       const fd = new FormData();
@@ -184,22 +192,20 @@ btnCheckIn?.addEventListener("click", () => {
         .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
         .then(({ ok, body }) => {
           if (!ok || body.ok === false) {
-            if (body.error === "only_pdf_or_xlsx_allowed") throw new Error("??? PDF ? Excel?xlsx????");
+            if (body.error === "only_pdf_or_xlsx_allowed") {
+              throw new Error("\u53ea\u652f\u63f4 PDF \u6216 Excel\uff08.xlsx\uff09\u6a94\u6848\u3002");
+            }
             throw new Error(body.error || "upload_failed");
           }
-          msgIn.innerHTML =
-            '<span style="color:#16a34a">送出成功，將前往歷史記錄。</span>';
-          setTimeout(() => {
-            window.location.href = "history.html";
-          }, 300);
+          setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
+          setTimeout(() => (window.location.href = "history.html"), 300);
         });
     })
-    .catch((err) => {
-      msgIn.innerHTML = `<span style="color:#dc2626">${err.message}</span>`;
-    });
+    .catch((err) => setMsg("error", err.message));
 });
 
 formIn?.addEventListener("change", renderPreview);
+
 document.addEventListener("DOMContentLoaded", () => {
   initMultiSelect(domainWrap);
   initMultiSelect(sdgWrap);

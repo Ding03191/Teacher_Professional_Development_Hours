@@ -7,7 +7,6 @@ const loginMsg = document.getElementById("loginMsg");
 const adminHint = document.getElementById("adminHint");
 const btnLogout = document.getElementById("btnLogout");
 const appbarActions = document.querySelector(".appbar-actions");
-const unitSelect = document.getElementById("unitSelect");
 const topbarUser = document.querySelector(".topbar-user");
 const logoutBtnTop = document.getElementById("btnLogoutTop");
 const topbarLoginLink = document.getElementById("topbarLoginLink");
@@ -124,7 +123,6 @@ loginForm?.addEventListener("submit", async (e) => {
   loginMsg.textContent = "";
   const fd = new FormData(loginForm);
   const payload = {
-    unitName: fd.get("unitName"),
     account: fd.get("account"),
     password: fd.get("password"),
   };
@@ -135,7 +133,7 @@ loginForm?.addEventListener("submit", async (e) => {
     });
     const role = data.data?.user?.role;
     if (role && role !== "root") {
-      window.location.href = "teacher.html";
+      window.location.href = "teacher_in.html";
       return;
     }
     await checkMe();
@@ -215,22 +213,3 @@ userTableBody?.addEventListener("click", async (e) => {
 });
 
 document.addEventListener("DOMContentLoaded", checkMe);
-
-async function loadDepartments() {
-  if (!unitSelect) return;
-  try {
-    const data = await api("/api/departments/list");
-    const items = data.data || [];
-    unitSelect.innerHTML = '<option value="">請選擇單位</option>';
-    items.forEach((item) => {
-      const opt = document.createElement("option");
-      opt.value = item.unit_name;
-      opt.textContent = item.unit_name;
-      unitSelect.appendChild(opt);
-    });
-  } catch (err) {
-    // silent fail, keep placeholder
-  }
-}
-
-document.addEventListener("DOMContentLoaded", loadDepartments);

@@ -13,9 +13,11 @@ const FIELD_DEFS = {
     { key: "hostName", label: "\u4e3b(\u627f)\u8fa6\u4eba\u54e1", type: "text" },
     { key: "ext", label: "\u806f\u7d61\u96fb\u8a71\uff08\u6821\u5167\u5206\u6a5f\uff09", type: "text" },
     { key: "location", label: "\u6d3b\u52d5\u5730\u9ede", type: "text" },
-    { key: "eventDate", label: "\u6d3b\u52d5\u65e5\u671f", type: "date" },
+    { key: "eventDateStart", label: "\u6d3b\u52d5\u65e5\u671f\uff08\u8d77\uff09", type: "date" },
+    { key: "eventDateEnd", label: "\u6d3b\u52d5\u65e5\u671f\uff08\u8a96\uff09", type: "date" },
     { key: "startTime", label: "\u6d3b\u52d5\u6642\u9593\uff08\u958b\u59cb\uff09", type: "time" },
     { key: "endTime", label: "\u6d3b\u52d5\u6642\u9593\uff08\u7d50\u675f\uff09", type: "time" },
+    { key: "hours", label: "\u6642\u6578", type: "text" },
     { key: "hasCert", label: "\u662f\u5426\u6838\u767c\u8b49\u66f8", type: "text" },
     { key: "certNo", label: "\u8b49\u66f8\u5b57\u865f", type: "text" },
     { key: "attachments", label: "\u9644\u4ef6", type: "array" },
@@ -26,10 +28,6 @@ const FIELD_DEFS = {
     { key: "activityDetail", label: "\u4e8c\u3001\u8a73\u7d30\u6d3b\u52d5\u5167\u5bb9", type: "textarea" },
     { key: "teachingRelation", label: "\u4e09\u3001\u6d3b\u52d5\u8207\u63d0\u6617\u6559\u5e2b\u6559\u5b78\u5c08\u696d\u767c\u5c55\u4e4b\u95dc\u4fc2\uff08\u6559\u5b78\u5c08\u696d\uff09", type: "textarea" },
     { key: "researchRelation", label: "\u56db\u3001\u6d3b\u52d5\u8207\u63d0\u6617\u6559\u5e2b\u7814\u7a76\u5c08\u696d\u767c\u5c55\u4e4b\u95dc\u4fc2\uff08\u7814\u7a76\u5c08\u696d\uff09", type: "textarea" },
-    { key: "applicant", label: "\u7533\u8acb\u4eba\uff08\u4e3b\u8fa6\u4eba\uff09", type: "text" },
-    { key: "deptHead", label: "\u7533\u8acb\u55ae\u4f4d\u4e3b\u7ba1", type: "text" },
-    { key: "staff", label: "\u8655\u7406\u4eba\u54e1", type: "text" },
-    { key: "lead", label: "\u6559\u5b78\u8cc7\u6e90\u7d44\u7d44\u9577", type: "text" },
     { key: "note", label: "\u5176\u4ed6\u5099\u8a3b", type: "textarea" },
   ],
   out: [
@@ -40,6 +38,7 @@ const FIELD_DEFS = {
     { key: "eventDate", label: "\u6d3b\u52d5\u65e5\u671f", type: "date" },
     { key: "startTime", label: "\u6d3b\u52d5\u8d77\u8fc4\u6642\u9593\uff08\u958b\u59cb\uff09", type: "time" },
     { key: "endTime", label: "\u6d3b\u52d5\u8d77\u8fc4\u6642\u9593\uff08\u7d50\u675f\uff09", type: "time" },
+    { key: "hours", label: "\u6642\u6578", type: "text" },
     { key: "courseTitle", label: "\u6d3b\u52d5\u540d\u7a31", type: "text" },
     { key: "organizer", label: "\u8209\u8fa6\u55ae\u4f4d", type: "text" },
     { key: "relevance", label: "\u6559\u5b78\u5c08\u696d\u6210\u9577", type: "textarea" },
@@ -100,7 +99,7 @@ function renderDetailForm(record) {
         ${rows}
       </div>
       <div class="detail-actions">
-        <button type="button" class="btn ghost" data-action="export" data-id="${record.id}">\u532f\u51fa PDF</button>
+        ${record.app_type === "in" ? "" : `<button type="button" class="btn ghost" data-action="export" data-id="${record.id}">\u532f\u51fa PDF</button>`}
         <button type="button" class="btn ghost" data-action="delete" data-id="${record.id}">\u522a\u9664</button>
         <button type="submit" class="btn primary">\u66f4\u65b0</button>
       </div>

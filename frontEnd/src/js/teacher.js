@@ -5,11 +5,60 @@ const filesInput = document.getElementById("files");
 const fileList = document.getElementById("fileList");
 const msgEl = document.getElementById("msg");
 const certNoBox = document.getElementById("certNoBox");
+const btnScoreOut = document.getElementById("btnScoreOut");
+const relevanceScoreValue = document.getElementById("relevanceScoreValue");
+const relevanceScoreMsg = document.getElementById("relevanceScoreMsg");
+const startTimeOut = document.querySelector('input[name="startTime"]');
+const endTimeOut = document.querySelector('input[name="endTime"]');
+let hoursInputOut = null;
+
+function timeToMinutes(value) {
+  if (!value || !value.includes(":")) return null;
+  const [hh, mm] = value.split(":").map((v) => parseInt(v, 10));
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return hh * 60 + mm;
+}
+
+function calcRoundedHours(start, end) {
+  const s = timeToMinutes(start);
+  const e = timeToMinutes(end);
+  if (s === null || e === null || e <= s) return "";
+  const diffHours = (e - s) / 60;
+  const rounded = Math.round(diffHours);
+  const clamped = Math.min(4, Math.max(1, rounded));
+  return clamped.toString();
+}
+
+function ensureHoursFieldOut() {
+  if (!formT || hoursInputOut) return;
+  const timeField = startTimeOut?.closest(".field") || endTimeOut?.closest(".field");
+  if (!timeField || !timeField.parentElement) return;
+  const wrapper = document.createElement("label");
+  wrapper.className = "field";
+  wrapper.innerHTML = `
+    <span class="lbl">活動時數（自動計算）</span>
+    <input name="hours" id="hoursOut" type="text" readonly placeholder="1~4 小時">
+  `;
+  timeField.parentElement.insertBefore(wrapper, timeField.nextSibling);
+  hoursInputOut = wrapper.querySelector("input");
+}
+
+function updateHoursOut() {
+  if (!hoursInputOut) return;
+  const hours = calcRoundedHours(startTimeOut?.value, endTimeOut?.value);
+  hoursInputOut.value = hours;
+}
 
 function setMsg(type, text) {
   if (!msgEl) return;
   const color = type === "error" ? "#dc2626" : "#16a34a";
   msgEl.innerHTML = `<span style="color:${color}">${text}</span>`;
+}
+
+function setScoreMsg(type, text) {
+  if (!relevanceScoreMsg) return;
+  const color = type === "error" ? "#dc2626" : "#16a34a";
+  relevanceScoreMsg.innerHTML = `<span style="color:${color}">${text}</span>`;
 }
 
 formT?.addEventListener("change", (e) => {
@@ -31,14 +80,17 @@ filesInput?.addEventListener("change", () => {
 
 function collectTeacherForm() {
   const fd = new FormData(formT);
+  const hours = calcRoundedHours(fd.get("startTime"), fd.get("endTime"));
   return {
     teacherName: fd.get("teacherName")?.toString().trim(),
     department: fd.get("department")?.toString().trim(),
     teacherId: fd.get("teacherId")?.toString().trim(),
     ext: fd.get("ext")?.toString().trim() || "",
-    eventDate: fd.get("eventDate"),
+    eventDateStart: fd.get("eventDateStart"),
+    eventDateEnd: fd.get("eventDateEnd"),
     startTime: fd.get("startTime"),
     endTime: fd.get("endTime"),
+    hours,
     courseTitle: fd.get("courseTitle")?.toString().trim(),
     organizer: fd.get("organizer")?.toString().trim(),
     relevance: fd.get("relevance")?.toString().trim(),
@@ -59,7 +111,11 @@ function validateTeacher() {
   if (!d.teacherName) errs.push("\u8acb\u8f38\u5165\u6559\u5e2b\u59d3\u540d\u3002");
   if (!d.department) errs.push("\u8acb\u8f38\u5165\u4efb\u6559\u55ae\u4f4d\u3002");
   if (!d.teacherId) errs.push("\u8acb\u8f38\u5165\u6559\u5e2b\u7de8\u865f\u3002");
-  if (!d.eventDate) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u65e5\u671f\u3002");
+  if (!d.eventDateStart) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u8d77\u59cb\u65e5\u671f\u3002");
+  if (!d.eventDateEnd) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u7d50\u675f\u65e5\u671f\u3002");
+  if (d.eventDateStart && d.eventDateEnd && d.eventDateEnd < d.eventDateStart) {
+    errs.push("\u6d3b\u52d5\u7d50\u675f\u65e5\u671f\u9700\u665a\u65bc\u6216\u7b49\u65bc\u8d77\u59cb\u65e5\u671f\u3002");
+  }
   if (!d.startTime || !d.endTime) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u6642\u9593\u3002");
   if (d.startTime && d.endTime && d.startTime >= d.endTime) {
     errs.push("\u7d50\u675f\u6642\u9593\u9700\u665a\u65bc\u958b\u59cb\u6642\u9593\u3002");
@@ -95,7 +151,9 @@ formT?.addEventListener("submit", (e) => {
       data,
       summary: {
         event_name: data.courseTitle,
-        event_date: data.eventDate,
+        event_date: data.eventDateStart && data.eventDateEnd
+          ? `${data.eventDateStart} ~ ${data.eventDateEnd}`
+          : data.eventDateStart || data.eventDateEnd || "",
         organizer: data.organizer,
       },
     }),
@@ -142,7 +200,10 @@ function fillPdfForm(d) {
   setText("pdf_department", d.department);
   setText("pdf_teacherId", d.teacherId);
   setText("pdf_ext", d.ext);
-  setText("pdf_eventDate", d.eventDate);
+  const dateRange = d.eventDateStart && d.eventDateEnd
+    ? `${d.eventDateStart} ~ ${d.eventDateEnd}`
+    : d.eventDateStart || d.eventDateEnd || "";
+  setText("pdf_eventDate", dateRange);
   setText("pdf_start", d.startTime);
   setText("pdf_end", d.endTime);
   setText("pdf_courseTitle", d.courseTitle);
@@ -170,3 +231,59 @@ function fillPdfForm(d) {
 
 // expose for other scripts if needed
 window.fillPdfForm = fillPdfForm;
+
+document.addEventListener("DOMContentLoaded", () => {
+  ensureHoursFieldOut();
+  updateHoursOut();
+  startTimeOut?.addEventListener("change", updateHoursOut);
+  endTimeOut?.addEventListener("change", updateHoursOut);
+});
+
+btnScoreOut?.addEventListener("click", async () => {
+  if (relevanceScoreValue) relevanceScoreValue.textContent = "評分中…";
+  setScoreMsg("success", "");
+
+  const relevance = formT?.querySelector('textarea[name="relevance"]')?.value?.trim() || "";
+  const files = Array.from(filesInput?.files || []);
+  if (!relevance) {
+    if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
+    setScoreMsg("error", "請先填寫教學專業成長說明。");
+    return;
+  }
+  if (!files.length) {
+    if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
+    setScoreMsg("error", "請先上傳至少 1 份佐證檔案。");
+    return;
+  }
+
+  try {
+    const fd = new FormData();
+    fd.append("relevance", relevance);
+    files.forEach((f) => fd.append("files", f));
+
+    const res = await fetch(`${API_BASE}/api/ai/relevance`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.ok === false) {
+      const err = body.error || "score_failed";
+      if (err === "not_logged_in") {
+        throw new Error("請先登入後再評分。");
+      }
+      if (err === "forbidden") {
+        throw new Error("權限不足，無法評分。");
+      }
+      throw new Error(err);
+    }
+    const result = body.data || {};
+    const score = result.score;
+    const reason = result.reason || "";
+    if (relevanceScoreValue) relevanceScoreValue.textContent = typeof score === "number" ? `${score} / 5` : "完成";
+    setScoreMsg("success", reason ? `原因：${reason}` : "評分完成");
+  } catch (err) {
+    if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
+    setScoreMsg("error", err.message || "評分失敗");
+  }
+});

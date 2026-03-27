@@ -11,7 +11,7 @@ _BASE_DIR = os.path.dirname(__file__)
 _BACKEND_DIR = os.path.abspath(os.path.join(_BASE_DIR, "..", "..", ".."))
 _LEGACY_DB_PATH = os.path.join(_BACKEND_DIR, "scoringHistory.sqlite")
 _DEFAULT_DB_PATH = os.path.join(_BACKEND_DIR, "db", "scoringHistory.sqlite")
-_DEFAULT_DEPT_CSV = os.path.join(_BACKEND_DIR, "123.csv")
+_DEFAULT_DEPT_CSV = os.path.join(_BACKEND_DIR, "the.csv")
 DB_NAME = os.environ.get("DB_PATH", _DEFAULT_DB_PATH)
 TABLE_NAME = 'history'
 LABEL_TABLE_NAME = "history_labels"
@@ -266,29 +266,31 @@ def init_departments_from_csv(csv_path: str | None = None):
         return
     conn = _connect()
     c = conn.cursor()
-    c.execute(f"SELECT COUNT(1) FROM {DEPT_TABLE_NAME}")
-    count = c.fetchone()[0]
-    if count:
-        conn.close()
-        return
     default_pwd = os.environ.get("DEPT_DEFAULT_PASSWORD", "12345678")
     with open(path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             # CSV headers are expected to be Chinese (see 123.csv). Support legacy garbled headers too.
             unit_no = (
-                row.get("????")
+                row.get("系統編號")
+                or row.get("????")
                 or row.get("??????")
                 or ""
             ).strip()
             unit_name = (
-                row.get("??(???)??")
+                row.get("單位(使用者)名稱")
+                or row.get("??(???)??")
                 or row.get("???(????????")
                 or ""
             ).strip()
             account = (
-                row.get("??")
+                row.get("帳號")
+                or row.get("??")
                 or row.get("???")
+                or ""
+            ).strip()
+            password = (
+                row.get("密碼")
                 or ""
             ).strip()
             if not unit_no or not unit_name or not account:
@@ -297,7 +299,7 @@ def init_departments_from_csv(csv_path: str | None = None):
                 unit_no_int = int(unit_no)
             except Exception:
                 continue
-            pwd_hash = generate_password_hash(default_pwd)
+            pwd_hash = generate_password_hash(password or default_pwd)
             create_department(unit_no_int, unit_name, account, pwd_hash)
     conn.close()
 

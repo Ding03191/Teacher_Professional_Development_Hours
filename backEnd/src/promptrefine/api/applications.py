@@ -225,17 +225,21 @@ def upload_files(app_id: int):
         return _err("no_files")
     files = request.files.getlist("files")
     saved = []
-    for f in files:
-        filename = secure_filename(f.filename or "")
-        if not filename:
+    for idx, f in enumerate(files):
+        original_name = (f.filename or "").strip()
+        ext = Path(original_name).suffix.lower()
+        if not ext:
             continue
-        if not (filename.lower().endswith(".pdf") or filename.lower().endswith(".xlsx")):
+        if ext not in (".pdf", ".xlsx"):
             return _err("only_pdf_or_xlsx_allowed")
+        safe_name = secure_filename(original_name)
+        if not safe_name:
+            safe_name = f"file{idx + 1}{ext}"
         stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-        stored_name = f"{app_id}_{stamp}_{filename}"
+        stored_name = f"{app_id}_{stamp}_{safe_name}"
         path = UPLOAD_DIR / stored_name
         f.save(path)
-        saved.append({"name": filename, "path": str(path)})
+        saved.append({"name": original_name or safe_name, "path": str(path)})
     if saved:
         db.add_application_files(app_id, saved)
     return _ok({"files": saved})

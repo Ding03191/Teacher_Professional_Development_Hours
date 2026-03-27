@@ -17,6 +17,8 @@ from ..utils.rag_utils import (
     split_text_into_chunks,
 )
 
+MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4o")
+
 # 設定 Tesseract 執行檔位置（Windows）
 # 先看有沒有環境變數，沒有就用 C:\Tesseract-OCR\tesseract.exe
 tesseract_path = (
@@ -115,7 +117,7 @@ attendance_instructions = func.read_file_to_string(_ATTENDANCE_PROMPT_PATH)
 def analyze_with_gpt(file_content, instruction):
     try:
         response = openai.chat.completions.create(
-            model="gpt-4o",
+            model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": system_instructions},
                 {"role": "user", "content": f"{instruction}\nHere is the file content:\n{file_content}"}
@@ -154,7 +156,7 @@ def analyze_with_gpt_rag(file_content, instruction):
 
         # 丟給 GPT 處理
         response = openai.chat.completions.create(
-            model="gpt-4o",
+            model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": system_instructions},
                 {"role": "user", "content": f"{instruction}\n\n以下是與此最相關的內容：\n{relevant_text}"}
@@ -197,7 +199,7 @@ def analyze_with_gpt_rag_mix(file_content, instruction):
 
         # 🔹4. 丟給 GPT
         response = openai.chat.completions.create(
-            model="gpt-4o",
+            model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": system_instructions},
                 {"role": "user", "content": f"{instruction}\n\n以下是與此最相關的內容：\n{relevant_text}"}
@@ -262,7 +264,7 @@ def score_relevance(relevance_text, evidence_text):
         + (evidence_text or "")
     )
     response = openai.chat.completions.create(
-        model="gpt-4o",
+        model=MODEL_NAME,
         messages=[
             {"role": "system", "content": relevance_instructions},
             {"role": "user", "content": user_content},
@@ -285,7 +287,7 @@ def score_attendance(name, evidence_text):
         + (evidence_text or "")
     )
     response = openai.chat.completions.create(
-        model="gpt-4o",
+        model=MODEL_NAME,
         messages=[
             {"role": "system", "content": attendance_instructions},
             {"role": "user", "content": user_content},

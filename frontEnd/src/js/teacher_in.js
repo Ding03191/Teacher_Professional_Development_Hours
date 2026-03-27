@@ -8,6 +8,46 @@ const domainWrap = document.querySelector('[data-multi="domain"]');
 const sdgWrap = document.querySelector('[data-multi="sdg"]');
 const filesInputIn = document.getElementById("filesIn");
 const fileListIn = document.getElementById("fileListIn");
+const startTimeIn = document.querySelector('input[name="startTime"]');
+const endTimeIn = document.querySelector('input[name="endTime"]');
+let hoursInputIn = null;
+
+function timeToMinutes(value) {
+  if (!value || !value.includes(":")) return null;
+  const [hh, mm] = value.split(":").map((v) => parseInt(v, 10));
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return hh * 60 + mm;
+}
+
+function calcRoundedHours(start, end) {
+  const s = timeToMinutes(start);
+  const e = timeToMinutes(end);
+  if (s === null || e === null || e <= s) return "";
+  const diffHours = (e - s) / 60;
+  const rounded = Math.round(diffHours);
+  const clamped = Math.min(4, Math.max(1, rounded));
+  return clamped.toString();
+}
+
+function ensureHoursFieldIn() {
+  if (!formIn || hoursInputIn) return;
+  const timeField = startTimeIn?.closest(".field") || endTimeIn?.closest(".field");
+  if (!timeField || !timeField.parentElement) return;
+  const wrapper = document.createElement("label");
+  wrapper.className = "field span-2";
+  wrapper.innerHTML = `
+    <span class="lbl">活動時數（自動計算）</span>
+    <input name="hours" id="hoursIn" type="text" readonly placeholder="1~4 小時">
+  `;
+  timeField.parentElement.insertBefore(wrapper, timeField.nextSibling);
+  hoursInputIn = wrapper.querySelector("input");
+}
+
+function updateHoursIn() {
+  if (!hoursInputIn) return;
+  const hours = calcRoundedHours(startTimeIn?.value, endTimeIn?.value);
+  hoursInputIn.value = hours;
+}
 
 function setMsg(type, text) {
   if (!msgIn) return;
@@ -93,6 +133,7 @@ function initMultiSelect(container) {
 function collectInCampusForm() {
   if (!formIn) return {};
   const fd = new FormData(formIn);
+  const hours = calcRoundedHours(fd.get("startTime"), fd.get("endTime"));
 
   return {
     organizerDept: fd.get("organizerDept")?.toString().trim(),
@@ -103,6 +144,7 @@ function collectInCampusForm() {
     eventDate: fd.get("eventDate")?.toString().trim(),
     startTime: fd.get("startTime")?.toString().trim(),
     endTime: fd.get("endTime")?.toString().trim(),
+    hours,
     domain: getCheckedValues(domainWrap),
     domainOther: fd.get("domainOther")?.toString().trim(),
     sdg: getCheckedValues(sdgWrap),
@@ -220,4 +262,11 @@ filesInputIn?.addEventListener("change", () => {
     li.textContent = `${i + 1}. ${f.name}`;
     fileListIn.appendChild(li);
   });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  ensureHoursFieldIn();
+  updateHoursIn();
+  startTimeIn?.addEventListener("change", updateHoursIn);
+  endTimeIn?.addEventListener("change", updateHoursIn);
 });

@@ -50,9 +50,13 @@ def login():
     unit_name = (data.get("unitName") or "").strip()
     account = (data.get("account") or "").strip().lower()
     password = data.get("password") or ""
-    if unit_name and account:
+    if account:
         dept = db.get_department_by_account(account)
-        if not dept or dept[2] != unit_name or not verify_department_password(dept, password):
+        if not dept:
+            return json_err("登入資訊錯誤", 401)
+        if unit_name and dept[2] != unit_name:
+            return json_err("登入資訊錯誤", 401)
+        if not verify_department_password(dept, password):
             return json_err("登入資訊錯誤", 401)
         session.clear()
         session["uid"] = dept[0]

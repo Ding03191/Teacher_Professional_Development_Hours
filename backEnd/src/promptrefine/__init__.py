@@ -28,6 +28,8 @@ def create_app():
     openai.api_key = app.config["OPENAI_API_KEY"]
     if not openai.api_key:
         raise ValueError("Error: OPENAI_API_KEY environment variable is not set!")
+    if app.config.get("OPENAI_BASE_URL"):
+        openai.base_url = app.config["OPENAI_BASE_URL"]
 
     db.init_db()
     db.init_users_table()

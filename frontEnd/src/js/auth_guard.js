@@ -64,6 +64,14 @@ async function guard() {
     const user = await fetchMe();
     window.__authUser = user;
     setAvatar(user);
+    document.body.classList.toggle("is-root", user?.role === "root");
+    document.querySelectorAll("[data-role='root']").forEach((el) => {
+      if (user?.role !== "root") {
+        el.classList.add("is-hidden");
+      } else {
+        el.classList.remove("is-hidden");
+      }
+    });
     const { login, settings } = getTopbarLinks();
     login?.classList.add("is-hidden");
     settings?.classList.remove("is-hidden");

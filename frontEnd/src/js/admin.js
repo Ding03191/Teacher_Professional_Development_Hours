@@ -61,6 +61,8 @@ async function checkMe() {
     const data = await api("/api/auth/me");
     const user = data.data?.user;
     if (!user) throw new Error("not_logged_in");
+    document.body.classList.toggle("is-root", user.role === "root");
+    document.body.classList.remove("is-login");
     hide(loginPanel);
     show(appbarActions);
     show(btnLogout);
@@ -77,8 +79,10 @@ async function checkMe() {
       adminHint.textContent = "";
     }
   } catch (err) {
+    document.body.classList.remove("is-root");
     hide(adminPanel);
     show(loginPanel);
+    document.body.classList.add("is-login");
     hide(appbarActions);
     hide(btnLogout);
     logoutBtnTop?.classList.add("is-hidden");
@@ -213,3 +217,17 @@ userTableBody?.addEventListener("click", async (e) => {
 });
 
 document.addEventListener("DOMContentLoaded", checkMe);
+
+function initPasswordToggle() {
+  const btn = document.querySelector('[data-toggle="password"]');
+  const input = document.getElementById("loginPassword");
+  if (!btn || !input) return;
+  btn.addEventListener("click", () => {
+    const isText = input.type === "text";
+    input.type = isText ? "password" : "text";
+    btn.classList.toggle("is-on", !isText);
+    btn.setAttribute("aria-label", isText ? "Show password" : "Hide password");
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initPasswordToggle);

@@ -93,6 +93,11 @@ def init_db():
             event_date TEXT,
             organizer TEXT,
             data_json TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            approved_hours REAL,
+            review_comment TEXT,
+            reviewed_by TEXT,
+            reviewed_at TEXT,
             created_at DATETIME DEFAULT (datetime('now','localtime'))
         )
     ''')
@@ -103,6 +108,16 @@ def init_db():
     for col, col_type in (("file_name", "TEXT"), ("pdf_path", "TEXT")):
         if col not in existing_cols:
             c.execute(f"ALTER TABLE {TABLE_NAME} ADD COLUMN {col} {col_type}")
+    app_cols = {row[1] for row in c.execute(f"PRAGMA table_info({APP_TABLE_NAME})").fetchall()}
+    for col, col_type in (
+        ("status", "TEXT"),
+        ("approved_hours", "REAL"),
+        ("review_comment", "TEXT"),
+        ("reviewed_by", "TEXT"),
+        ("reviewed_at", "TEXT"),
+    ):
+        if col not in app_cols:
+            c.execute(f"ALTER TABLE {APP_TABLE_NAME} ADD COLUMN {col} {col_type}")
 
     conn.commit()
     conn.close()
@@ -149,7 +164,8 @@ def list_applications(app_type: str | None = None, unit_name: str | None = None,
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     c.execute(
         f"""
-        SELECT id, app_type, unit_name, account, event_name, event_date, organizer, data_json, created_at
+        SELECT id, app_type, unit_name, account, event_name, event_date, organizer, data_json,
+               status, approved_hours, review_comment, reviewed_by, reviewed_at, created_at
         FROM {APP_TABLE_NAME}
         {where}
         ORDER BY created_at DESC, id DESC
@@ -170,6 +186,11 @@ def list_applications(app_type: str | None = None, unit_name: str | None = None,
                 "event_date": row["event_date"],
                 "organizer": row["organizer"],
                 "data": json.loads(row["data_json"] or "{}"),
+                "status": (row["status"] or "pending"),
+                "approved_hours": row["approved_hours"],
+                "review_comment": row["review_comment"],
+                "reviewed_by": row["reviewed_by"],
+                "reviewed_at": row["reviewed_at"],
                 "created_at": row["created_at"],
             }
         )
@@ -182,7 +203,8 @@ def get_application(app_id: int):
     c = conn.cursor()
     c.execute(
         f"""
-        SELECT id, app_type, unit_name, account, event_name, event_date, organizer, data_json, created_at
+        SELECT id, app_type, unit_name, account, event_name, event_date, organizer, data_json,
+               status, approved_hours, review_comment, reviewed_by, reviewed_at, created_at
         FROM {APP_TABLE_NAME}
         WHERE id = ?
         """,
@@ -201,6 +223,11 @@ def get_application(app_id: int):
         "event_date": row["event_date"],
         "organizer": row["organizer"],
         "data": json.loads(row["data_json"] or "{}"),
+        "status": (row["status"] or "pending"),
+        "approved_hours": row["approved_hours"],
+        "review_comment": row["review_comment"],
+        "reviewed_by": row["reviewed_by"],
+        "reviewed_at": row["reviewed_at"],
         "created_at": row["created_at"],
     }
 
@@ -229,6 +256,28 @@ def update_application(app_id: int, data: dict, summary: dict | None = None):
             json.dumps(data, ensure_ascii=False),
             app_id,
         ),
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_application_review(
+    app_id: int,
+    status: str,
+    approved_hours: float | None,
+    reviewer: str | None,
+    review_comment: str | None,
+    reviewed_at: str | None,
+):
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"""
+        UPDATE {APP_TABLE_NAME}
+        SET status = ?, approved_hours = ?, review_comment = ?, reviewed_by = ?, reviewed_at = ?
+        WHERE id = ?
+        """,
+        (status, approved_hours, review_comment, reviewer, reviewed_at, app_id),
     )
     conn.commit()
     conn.close()

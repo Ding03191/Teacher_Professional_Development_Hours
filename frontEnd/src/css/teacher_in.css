@@ -16,7 +16,8 @@ body{
   margin:0;
   background:var(--bg);
   color:var(--text);
-  font:15.5px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans TC",sans-serif;
+  font:15.5px/1.65 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  font-weight:500;
 }
 
 /* ===== 上方列 ===== */

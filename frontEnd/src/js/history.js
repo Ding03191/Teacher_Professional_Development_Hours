@@ -4,7 +4,6 @@ const historyList = document.getElementById("historyList");
 const historyMsg = document.getElementById("historyMsg");
 const btnRefresh = document.getElementById("btnRefresh");
 const tabs = Array.from(document.querySelectorAll(".tab"));
-const printArea = document.getElementById("printArea");
 
 const FIELD_DEFS = {
   in: [
@@ -35,7 +34,8 @@ const FIELD_DEFS = {
     { key: "department", label: "\u4efb\u6559\u55ae\u4f4d", type: "text" },
     { key: "teacherId", label: "\u6559\u5e2b\u7de8\u865f", type: "text" },
     { key: "ext", label: "\u806f\u7d61\u5206\u6a5f", type: "text" },
-    { key: "eventDate", label: "\u6d3b\u52d5\u65e5\u671f", type: "date" },
+    { key: "eventDateStart", label: "\u6d3b\u52d5\u65e5\u671f\uff08\u8d77\uff09", type: "date" },
+    { key: "eventDateEnd", label: "\u6d3b\u52d5\u65e5\u671f\uff08\u8a96\uff09", type: "date" },
     { key: "startTime", label: "\u6d3b\u52d5\u8d77\u8fc4\u6642\u9593\uff08\u958b\u59cb\uff09", type: "time" },
     { key: "endTime", label: "\u6d3b\u52d5\u8d77\u8fc4\u6642\u9593\uff08\u7d50\u675f\uff09", type: "time" },
     { key: "hours", label: "\u6642\u6578", type: "text" },
@@ -51,6 +51,15 @@ const FIELD_DEFS = {
 
 function fmtType(type) {
   return type === "in" ? "\u6821\u5167" : "\u6821\u5916";
+}
+
+function normalizeStatus(status) {
+  const v = (status || "pending").toString().toLowerCase();
+  return v === "approved" ? "approved" : "pending";
+}
+
+function fmtStatus(status) {
+  return normalizeStatus(status) === "approved" ? "\u901a\u904e" : "\u5f85\u5be9\u6838";
 }
 
 function arrToText(value) {
@@ -69,21 +78,58 @@ function buildFieldInput(def, value) {
 
 function renderAttachmentsLinks(record) {
   const files = record.data?.attachments_files || [];
-  if (!files.length) return "";
-  const links = files
+  if (!files.length) {
+    const names = record.data?.attachments || [];
+    if (names.length) {
+      const label = names.join("?");
+      return `<div class="pdf-empty">??????${label}??????????????</div>`;
+    }
+    return "";
+  }
+  const pdfs = files
     .map((file, idx) => {
-      const name = file.name || `\u9644\u4ef6 ${idx + 1}`;
-      return `<a class="attachment-link" href="${API_BASE}/api/applications/${record.id}/files/${idx}" target="_blank" rel="noopener">${name}</a>`;
+      const name = file.name || `?? ${idx + 1}`;
+      const url = `${API_BASE}/api/applications/${record.id}/files/${idx}?inline=1`;
+      const isPdf = (file.name || "").toLowerCase().endsWith(".pdf");
+      return { name, url, isPdf };
     })
+    .filter((f) => f.isPdf);
+  if (!pdfs.length) return "";
+  const items = pdfs
+    .map(
+      (f, i) => `
+        <details class="pdf-item" ${i == 0 ? "open" : ""}>
+          <summary>${f.name}</summary>
+          <div class="pdf-frame">
+            <iframe src="${f.url}" title="${f.name}" loading="lazy"></iframe>
+          </div>
+          <a class="pdf-open" href="${f.url}" target="_blank" rel="noopener">??????</a>
+        </details>
+      `
+    )
     .join("");
-  return `<div class="attachment-links">${links}</div>`;
+  return `
+    <details class="pdf-preview">
+      <summary>?? PDF ???${pdfs.length}?</summary>
+      <div class="pdf-list">
+        ${items}
+      </div>
+    </details>
+  `;
 }
 
 function renderDetailForm(record) {
   const defs = FIELD_DEFS[record.app_type] || [];
+  const status = normalizeStatus(record.status);
+  const approvedHours =
+    record.approved_hours !== null && record.approved_hours !== undefined
+      ? record.approved_hours
+      : record.data?.hours || "";
+  const attachmentsPreview = renderAttachmentsLinks(record);
   const rows = defs
     .map((def) => {
-      const extra = def.key === "attachments" ? renderAttachmentsLinks(record) : "";
+      if (def.key === "attachments") return "";
+      const extra = "";
       return `
         <label class="field">
           <span class="lbl">${def.label}</span>
@@ -97,10 +143,16 @@ function renderDetailForm(record) {
     <form class="detail-form" data-id="${record.id}">
       <div class="detail-grid">
         ${rows}
+        <label class="field">
+          <span class="lbl">\u5be9\u6838\u72c0\u614b</span>
+          <input type="text" value="${fmtStatus(status)}" disabled>
+        </label>
+        <label class="field">
+          <span class="lbl">\u6838\u5b9a\u6642\u6578</span>
+          <input type="text" value="${approvedHours}" disabled>
+        </label>
       </div>
-      <div class="detail-actions">
-        ${record.app_type === "in" ? "" : `<button type="button" class="btn ghost" data-action="export" data-id="${record.id}">\u532f\u51fa PDF</button>`}
-        <button type="button" class="btn ghost" data-action="delete" data-id="${record.id}">\u522a\u9664</button>
+      <div class="detail-actions">        <button type="button" class="btn ghost" data-action="delete" data-id="${record.id}">\u522a\u9664</button>
         <button type="submit" class="btn primary">\u66f4\u65b0</button>
       </div>
     </form>
@@ -121,6 +173,7 @@ function renderList(records) {
     item.innerHTML = `
       <summary class="history-summary">
         <span class="history-badge ${record.app_type}">${fmtType(record.app_type)}</span>
+        <span class="status-badge ${normalizeStatus(record.status)}">${fmtStatus(record.status)}</span>
         <strong>${record.event_name || "-"}</strong>
         <span class="muted">${record.event_date || "-"}</span>
         <span class="muted">${record.unit_name || "-"}</span>
@@ -188,50 +241,7 @@ function buildSummary(appType, data) {
   };
 }
 
-function buildPrintHtml(record) {
-  const defs = FIELD_DEFS[record.app_type] || [];
-  const rows = defs
-    .map((def) => {
-      const value = arrToText(record.data?.[def.key]);
-      return `<div class="print-row"><div class="print-label">${def.label}</div><div class="print-value">${value || "-"}</div></div>`;
-    })
-    .join("");
-  return `
-    <div class="print-sheet">
-      <h2>\u7533\u8acb\u7d00\u9304\uff1a${fmtType(record.app_type)}</h2>
-      <div class="print-meta">\u55ae\u4f4d\uff1a${record.unit_name || "-"} \u2022 \u6d3b\u52d5\u65e5\u671f\uff1a${record.event_date || "-"}</div>
-      <div class="print-block">
-        ${rows}
-      </div>
-      <div class="print-only">
-        <h3>\u7c3d\u7ae0\u6b04\u4f4d</h3>
-        <div class="print-sign">
-          <div>\u7533\u8acb\u4eba________________</div>
-          <div>\u55ae\u4f4d\u4e3b\u7ba1________________</div>
-          <div>\u8655\u7406\u4eba\u54e1________________</div>
-          <div>\u6559\u5b78\u8cc7\u6e90\u7d44\u7d44\u9577________________</div>
-          <div>\u5099\u8a3b\uff1a_______________________________</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
 
-function injectPrint(record) {
-  if (!printArea) return;
-  printArea.classList.remove("is-hidden");
-  printArea.innerHTML = `
-    <style>
-      .print-sheet{font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;color:#111;}
-      .print-sheet h2{margin:0 0 10px;}
-      .print-meta{margin-bottom:12px;color:#555;}
-      .print-row{display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 0;border-bottom:1px dashed #ddd;}
-      .print-label{font-weight:700;}
-      .print-sign{display:grid;gap:10px;margin-top:12px;}
-    </style>
-    ${buildPrintHtml(record)}
-  `;
-}
 
 historyList?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -259,14 +269,6 @@ historyList?.addEventListener("click", async (event) => {
   const action = target.dataset.action;
   const id = target.dataset.id;
   if (!action || !id) return;
-
-  if (action === "export") {
-    const record = await api(`/api/applications/${id}`);
-    injectPrint(record);
-    window.print();
-    return;
-  }
-
   if (action === "delete") {
     if (!confirm("\u78ba\u8a8d\u8981\u522a\u9664\u9019\u7b46\u7d00\u9304\u55ce\uff1f")) return;
     try {

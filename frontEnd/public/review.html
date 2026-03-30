@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../src/css/layout.css">
+  <title>時數審核</title>
+  <link rel="stylesheet" href="../src/css/review.css" />
+</head>
+<body>
+  <div class="layout">
+    <header class="layout-topbar">
+      <div class="layout-title">國立勤益科技大學教師成長時數平台</div>
+      <div class="topbar-actions">
+        <span class="topbar-user" aria-hidden="true">管</span>
+        <span id="topbarAccount" class="topbar-account"></span>
+        <a id="topbarLoginLink" class="topbar-link" href="admin.html">登入</a>
+        <a id="topbarSettingsLink" class="topbar-link is-hidden" href="admin.html">設定</a>
+        <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
+      </div>
+    </header>
+    <aside class="layout-sidebar">
+      <nav class="sidebar-nav">
+        <a class="nav-link" href="teacher_in.html">校內申請</a>
+        <a class="nav-link" href="teacher.html">校外申請</a>
+        <a class="nav-link" href="history.html">歷史紀錄</a>
+        <a class="nav-link active root-only" data-role="root" href="review.html">????</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="lang-btn" type="button">繁體中文</button>
+      </div>
+    </aside>
+    <div class="layout-main">
+      <main class="container">
+        <section class="card">
+          <div class="card-hd">時數審核</div>
+          <div class="review-toolbar">
+            <div class="tabs" role="tablist">
+              <button class="tab is-active" data-status="all" type="button">全部</button>
+              <button class="tab" data-status="pending" type="button">待審核</button>
+              <button class="tab" data-status="approved" type="button">通過</button>
+            </div>
+            <div class="actions">
+              <button id="btnReviewRefresh" class="btn" type="button">重新整理</button>
+              <span id="reviewMsg" class="msg"></span>
+            </div>
+          </div>
+
+          <div id="reviewList" class="review-list"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../src/js/auth_guard.js" defer></script>
+  <script src="../src/js/review.js" defer></script>
+</body>
+</html>

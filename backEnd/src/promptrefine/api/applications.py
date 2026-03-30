@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, request, jsonify, session, send_file
 from werkzeug.utils import secure_filename
 from io import BytesIO
@@ -14,7 +15,8 @@ from ..utils.authz import require_role
 
 
 applications_bp = Blueprint("applications", __name__, url_prefix="/api/applications")
-UPLOAD_DIR = Path("/app/attachments/applications")
+_BACKEND_DIR = Path(__file__).resolve().parents[3]
+UPLOAD_DIR = Path(os.environ.get("APP_UPLOAD_DIR", _BACKEND_DIR / "attachments" / "applications"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -201,6 +203,33 @@ def update_application(app_id: int):
     return _ok({"id": app_id})
 
 
+@applications_bp.patch("/<int:app_id>/review")
+@require_role("root")
+def review_application(app_id: int):
+    record = db.get_application(app_id)
+    if not record:
+        return _err("not_found", 404)
+    payload = request.get_json(silent=True) or {}
+    status = (payload.get("status") or "pending").strip().lower()
+    if status not in ("pending", "approved"):
+        return _err("invalid_status")
+    approved_hours = payload.get("approved_hours", None)
+    if approved_hours == "":
+        approved_hours = None
+    if approved_hours is not None:
+        try:
+            approved_hours = float(approved_hours)
+        except Exception:
+            return _err("invalid_hours")
+    review_comment = (payload.get("review_comment") or "").strip()
+    reviewer = session.get("account") or session.get("unit_name") or "root"
+    reviewed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    db.update_application_review(
+        app_id, status, approved_hours, reviewer, review_comment, reviewed_at
+    )
+    return _ok({"id": app_id})
+
+
 @applications_bp.delete("/<int:app_id>")
 @require_role("dept")
 def delete_application(app_id: int):
@@ -295,4 +324,11 @@ def download_file(app_id: int, file_index: int):
     if not path:
         return _err("file_not_found", 404)
     filename = info.get("name") or "attachment.pdf"
-    return send_file(path, as_attachment=True, download_name=filename)
+    inline = (request.args.get("inline") or "").lower() in ("1", "true", "yes")
+    is_pdf = filename.lower().endswith(".pdf")
+    return send_file(
+        path,
+        as_attachment=not (inline and is_pdf),
+        download_name=filename,
+        mimetype="application/pdf" if (inline and is_pdf) else None,
+    )

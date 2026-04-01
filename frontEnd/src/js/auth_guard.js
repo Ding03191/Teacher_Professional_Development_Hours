@@ -5,6 +5,24 @@ const logoutBtn = document.getElementById("btnLogoutTop");
 const topbarLoginLink = document.getElementById("topbarLoginLink");
 const topbarSettingsLink = document.getElementById("topbarSettingsLink");
 const topbarAccount = document.getElementById("topbarAccount");
+const ROOT_ROLE_CACHE_KEY = "auth_role_cached";
+const ROOT_NAV_LABEL = "時數審核";
+
+function normalizeRootNavLabel() {
+  document.querySelectorAll("[data-role='root']").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    el.textContent = ROOT_NAV_LABEL;
+  });
+}
+
+function applyCachedRole() {
+  const cachedRole = (localStorage.getItem(ROOT_ROLE_CACHE_KEY) || "").trim();
+  if (cachedRole === "root") {
+    document.body.classList.add("is-root");
+  } else {
+    document.body.classList.remove("is-root");
+  }
+}
 
 function getTopbarLinks() {
   const loginText = "\u767b\u5165";
@@ -64,6 +82,7 @@ async function guard() {
     const user = await fetchMe();
     window.__authUser = user;
     setAvatar(user);
+    localStorage.setItem(ROOT_ROLE_CACHE_KEY, user?.role || "");
     document.body.classList.toggle("is-root", user?.role === "root");
     document.querySelectorAll("[data-role='root']").forEach((el) => {
       if (user?.role !== "root") {
@@ -87,6 +106,7 @@ async function guard() {
     }
     return user;
   } catch (err) {
+    localStorage.removeItem(ROOT_ROLE_CACHE_KEY);
     if (logoutBtn) logoutBtn.classList.add("is-hidden");
     const { login, settings } = getTopbarLinks();
     login?.classList.remove("is-hidden");
@@ -96,4 +116,6 @@ async function guard() {
   }
 }
 
+normalizeRootNavLabel();
+applyCachedRole();
 window.__authUserPromise = guard();

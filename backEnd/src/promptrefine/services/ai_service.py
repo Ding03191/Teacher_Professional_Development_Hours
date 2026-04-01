@@ -404,7 +404,7 @@ def _chat_with_lm_native_api(messages, max_tokens=400, temperature=0):
     api_key = os.getenv("OPENAI_API_KEY", "")
     chat_url = _derive_lm_native_chat_url(base_url)
     if not chat_url:
-        return ""
+        return "", "missing_base_url"
 
     headers = {"Content-Type": "application/json"}
     if api_key:
@@ -423,10 +423,12 @@ def _chat_with_lm_native_api(messages, max_tokens=400, temperature=0):
         try:
             body = res.json()
         except Exception:
-            return (res.text or "").strip()
-        return _extract_text_from_json_payload(body)
-    except Exception:
-        return ""
+            txt = (res.text or "").strip()
+            return txt, ("" if txt else "lm_native_empty_text")
+        txt = _extract_text_from_json_payload(body)
+        return txt, ("" if txt else "lm_native_empty_payload")
+    except Exception as e:
+        return "", f"lm_native_error: {e}"
 
 
 def _shrink_evidence_text(text, max_chars=24000):
@@ -453,7 +455,7 @@ def score_relevance(relevance_text, evidence_text):
         {"role": "system", "content": relevance_instructions},
         {"role": "user", "content": user_content},
     ]
-    content = _chat_with_lm_native_api(messages, max_tokens=400, temperature=0)
+    content, native_err = _chat_with_lm_native_api(messages, max_tokens=400, temperature=0)
     try:
         if not (content or "").strip():
             response = openai.chat.completions.create(
@@ -478,7 +480,11 @@ def score_relevance(relevance_text, evidence_text):
         )
         content = _extract_completion_text(response)
 
-    return _coerce_relevance_result(content)
+    result = _coerce_relevance_result(content)
+    if result.get("score") == 0 and result.get("reason") == "模型未回傳內容，請稍後重試。":
+        if native_err:
+            result["reason"] = f"模型未回傳內容（{native_err}）"
+    return result
 
 
 # score attendance name match
@@ -496,7 +502,7 @@ def score_attendance(name, evidence_text):
         {"role": "system", "content": attendance_instructions},
         {"role": "user", "content": user_content},
     ]
-    content = _chat_with_lm_native_api(messages, max_tokens=400, temperature=0)
+    content, native_err = _chat_with_lm_native_api(messages, max_tokens=400, temperature=0)
     try:
         if not (content or "").strip():
             response = openai.chat.completions.create(
@@ -519,4 +525,8 @@ def score_attendance(name, evidence_text):
         )
         content = _extract_completion_text(response)
 
-    return _coerce_relevance_result(content)
+    result = _coerce_relevance_result(content)
+    if result.get("score") == 0 and result.get("reason") == "模型未回傳內容，請稍後重試。":
+        if native_err:
+            result["reason"] = f"模型未回傳內容（{native_err}）"
+    return result

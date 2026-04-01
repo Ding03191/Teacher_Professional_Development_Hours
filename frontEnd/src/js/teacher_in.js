@@ -155,10 +155,7 @@ function collectInCampusForm() {
     domain: getCheckedValues(domainWrap),
     domainOther: fd.get("domainOther")?.toString().trim(),
     sdg: getCheckedValues(sdgWrap),
-    activityPurpose: fd.get("activityPurpose")?.toString().trim(),
-    activityDetail: fd.get("activityDetail")?.toString().trim(),
     teachingRelation: fd.get("teachingRelation")?.toString().trim(),
-    researchRelation: fd.get("researchRelation")?.toString().trim(),
     applicant: fd.get("applicant")?.toString().trim(),
     deptHead: fd.get("deptHead")?.toString().trim(),
     staff: fd.get("staff")?.toString().trim(),
@@ -187,8 +184,7 @@ function validateInCampusForm(data) {
   }
   if (!data.domain || data.domain.length === 0) errs.push("\u8acb\u9078\u64c7\u81f3\u5c11\u4e00\u9805\u93c8\u7d50\u9818\u57df\u3002");
   if (!data.sdg || data.sdg.length === 0) errs.push("\u8acb\u9078\u64c7\u81f3\u5c11\u4e00\u9805 SDGs \u6307\u6a19\u3002");
-  if (!data.activityPurpose) errs.push("\u8acb\u586b\u5beb\u6d3b\u52d5\u4e3b\u65e8\u3002");
-  if (!data.activityDetail) errs.push("\u8acb\u586b\u5beb\u8a73\u7d30\u6d3b\u52d5\u5167\u5bb9\u3002");
+  if (!data.teachingRelation) errs.push("\u8acb\u586b\u5beb\u300c\u4e09\u3001\u6d3b\u52d5\u8207\u63d0\u6607\u6559\u5e2b\u6559\u5b78\u5c08\u696d\u767c\u5c55\u4e4b\u95dc\u4fc2\u300d\u3002");
   if (!data.attachmentCount) errs.push("\u8acb\u81f3\u5c11\u4e0a\u50b3 1 \u4efd\u9644\u4ef6\u3002");
   return errs;
 }

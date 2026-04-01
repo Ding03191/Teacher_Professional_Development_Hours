@@ -47,7 +47,7 @@ body{
 .brand h1{
   margin:0;
   font-size:18px;
-  font-weight:800;
+  font-weight:700;
 }
 .appbar-actions{
   margin-left:auto;
@@ -93,7 +93,7 @@ body{
 .section-hd h3{
   margin:0 0 4px;
   font-size:18px;
-  font-weight:900;
+  font-weight:700;
 }
 .section-hd .muted{
   margin:0;
@@ -114,7 +114,7 @@ body{
 .card-hd{
   padding:14px 16px;
   border-bottom:1px solid var(--border);
-  font-weight:900;
+  font-weight:700;
 }
 .card-bd{
   padding:18px;
@@ -130,7 +130,7 @@ body{
   display:none !important;
 }
 .lbl{
-  font-weight:800;
+  font-weight:600;
   color:#374151;
 }
 .req::after{
@@ -187,6 +187,12 @@ textarea{
 }
 .time-sep{
   white-space:nowrap;
+  font-weight:800;
+  color:#4b5563;
+}
+.datetime-hint{
+  margin:6px 2px 0;
+  font-size:13px;
 }
 
 .choice{

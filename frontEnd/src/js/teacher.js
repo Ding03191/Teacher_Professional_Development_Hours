@@ -36,7 +36,7 @@ function ensureHoursFieldOut() {
   const wrapper = document.createElement("label");
   wrapper.className = "field";
   wrapper.innerHTML = `
-    <span class="lbl">活動時數（自動計算）</span>
+    <span class="lbl">活動時數（自動計算，最多4小時）</span>
     <input name="hours" id="hoursOut" type="text" readonly placeholder="1~4 小時">
   `;
   timeField.parentElement.insertBefore(wrapper, timeField.nextSibling);

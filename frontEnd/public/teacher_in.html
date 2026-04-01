@@ -85,18 +85,22 @@
                   <input name="location" required placeholder="請填校內教室 / 會議室，校外請詳述地區">
                 </label>
                 <label class="field">
-                  <span class="lbl req">活動日期</span>
-                  <input name="eventDate" type="date" required>
+                  <span class="lbl req">活動日期（起）</span>
+                  <input name="eventDateStart" type="date" required>
+                </label>
+                <label class="field">
+                  <span class="lbl req">活動日期（訖）</span>
+                  <input name="eventDateEnd" type="date" required>
                 </label>
 
-                <div class="field span-2">
-                  <span class="lbl req">活動時間</span>
+                <div class="field">
+                  <span class="lbl req">活動起訖時間</span>
                   <div class="time-grid">
                     <input name="startTime" type="time" required>
                     <span class="muted time-sep">～</span>
                     <input name="endTime" type="time" required>
                   </div>
-                  <p class="muted">例如：114/01/01  14:00～16:00</p>
+                  <p class="muted datetime-hint">例如：14:00～16:00</p>
                 </div>
 
                 

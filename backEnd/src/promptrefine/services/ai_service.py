@@ -2,9 +2,11 @@ import os
 import json
 import re
 import shutil
+from urllib.parse import urlsplit, urlunsplit
 from PyPDF2 import PdfReader
 import pdfplumber
 import openai
+import requests
 import pytesseract
 import openpyxl
 from PIL import Image, ImageEnhance, ImageOps  # 未來支援圖片上傳
@@ -247,15 +249,199 @@ def extract_attendance_content(file_path):
 # parse JSON from model output
 
 def _parse_json_response(text):
-    match = re.search(r"\{[\s\S]*\}", text or "")
-    if not match:
-        raise ValueError("Model response is not valid JSON")
-    return json.loads(match.group(0))
+    raw = (text or "").strip()
+
+    # 1) Prefer strict JSON parse first
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+
+    # 2) Handle markdown fenced JSON blocks
+    fenced = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", raw, re.IGNORECASE)
+    if fenced:
+        candidate = fenced.group(1).strip()
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+
+    # 3) Extract first JSON object from mixed text
+    match = re.search(r"\{[\s\S]*\}", raw)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except Exception:
+            pass
+
+    # 4) Fallback: recover score/reason from plain text output
+    score_match = re.search(r'(?:"score"|score)\s*[:=]\s*([0-5])', raw, re.IGNORECASE)
+    reason_match = re.search(r'(?:"reason"|reason)\s*[:=]\s*["“]?(.+?)["”]?(?:,|\n|$)', raw, re.IGNORECASE)
+    if score_match:
+        score = int(score_match.group(1))
+        reason = (reason_match.group(1).strip() if reason_match else "").strip()
+        return {"score": score, "reason": reason}
+
+    raise ValueError("Model response is not valid JSON")
+
+
+def _coerce_relevance_result(text):
+    raw = (text or "").strip()
+    if not raw:
+        return {"score": 0, "reason": "模型未回傳內容，請稍後重試。"}
+
+    # try direct JSON parser first
+    try:
+        data = _parse_json_response(raw)
+        score = int(data.get("score", 0))
+        score = max(0, min(5, score))
+        reason = str(data.get("reason", "")).strip()
+        return {"score": score, "reason": reason}
+    except Exception:
+        pass
+
+    # fallback patterns: "4/5", "score: 4", "分數 4"
+    score = None
+    m = re.search(r"([0-5])\s*/\s*5", raw)
+    if m:
+        score = int(m.group(1))
+    if score is None:
+        m = re.search(r"(?:score|分數)\s*[:：=]?\s*([0-5])", raw, re.IGNORECASE)
+        if m:
+            score = int(m.group(1))
+    if score is None:
+        m = re.search(r"\b([0-5])\b", raw)
+        if m:
+            score = int(m.group(1))
+    if score is None:
+        score = 0
+
+    reason = raw.replace("\r", " ").replace("\n", " ").strip()
+    if len(reason) > 120:
+        reason = reason[:120] + "..."
+    return {"score": max(0, min(5, score)), "reason": reason}
+
+
+def _extract_completion_text(response):
+    if not response or not getattr(response, "choices", None):
+        return ""
+    msg = response.choices[0].message
+    if not msg:
+        return ""
+    content = (getattr(msg, "content", "") or "").strip()
+    if content:
+        return content
+    # LM Studio may place output in reasoning with empty content.
+    reasoning = (getattr(msg, "reasoning", "") or "").strip()
+    return reasoning
+
+
+def _derive_lm_native_chat_url(base_url):
+    raw = (base_url or "").strip()
+    if not raw:
+        return ""
+    parts = urlsplit(raw)
+    path = (parts.path or "").rstrip("/")
+
+    if path.endswith("/api/v1"):
+        native_base = path
+    elif path.endswith("/v1"):
+        native_base = path[: -len("/v1")] + "/api/v1"
+    elif not path:
+        native_base = "/api/v1"
+    else:
+        native_base = path + "/api/v1"
+
+    return urlunsplit((parts.scheme, parts.netloc, native_base + "/chat", "", ""))
+
+
+def _extract_text_from_json_payload(payload):
+    if payload is None:
+        return ""
+
+    # OpenAI-like
+    if isinstance(payload, dict):
+        choices = payload.get("choices")
+        if isinstance(choices, list) and choices:
+            msg = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
+            if isinstance(msg, dict):
+                content = (msg.get("content") or "").strip()
+                if content:
+                    return content
+                reasoning = (msg.get("reasoning") or "").strip()
+                if reasoning:
+                    return reasoning
+
+    # LM Studio native variations: recursively find first useful text field.
+    preferred_keys = ("content", "text", "output_text", "response", "reasoning")
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k in preferred_keys:
+                v = node.get(k)
+                if isinstance(v, str) and v.strip():
+                    return v.strip()
+            for v in node.values():
+                got = walk(v)
+                if got:
+                    return got
+        elif isinstance(node, list):
+            for item in node:
+                got = walk(item)
+                if got:
+                    return got
+        elif isinstance(node, str):
+            s = node.strip()
+            if s:
+                return s
+        return ""
+
+    return walk(payload)
+
+
+def _chat_with_lm_native_api(messages, max_tokens=400, temperature=0):
+    base_url = os.getenv("OPENAI_BASE_URL", "")
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    chat_url = _derive_lm_native_chat_url(base_url)
+    if not chat_url:
+        return ""
+
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    payload = {
+        "model": MODEL_NAME,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+    }
+
+    try:
+        res = requests.post(chat_url, headers=headers, json=payload, timeout=60)
+        res.raise_for_status()
+        try:
+            body = res.json()
+        except Exception:
+            return (res.text or "").strip()
+        return _extract_text_from_json_payload(body)
+    except Exception:
+        return ""
+
+
+def _shrink_evidence_text(text, max_chars=24000):
+    raw = (text or "").strip()
+    if len(raw) <= max_chars:
+        return raw
+    head = raw[: int(max_chars * 0.7)]
+    tail = raw[-int(max_chars * 0.3):]
+    return head + "\n\n[...內容過長，已節錄...]\n\n" + tail
 
 
 # score relevance between explanation and evidence
 
 def score_relevance(relevance_text, evidence_text):
+    evidence_text = _shrink_evidence_text(evidence_text, max_chars=24000)
     user_content = (
         "Teaching growth description:\n"
         + (relevance_text or "")
@@ -263,22 +449,42 @@ def score_relevance(relevance_text, evidence_text):
         + "Evidence content:\n"
         + (evidence_text or "")
     )
-    response = openai.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": relevance_instructions},
-            {"role": "user", "content": user_content},
-        ],
-        temperature=0,
-        max_tokens=400,
-    )
-    content = response.choices[0].message.content if response.choices else ""
-    return _parse_json_response(content)
+    messages = [
+        {"role": "system", "content": relevance_instructions},
+        {"role": "user", "content": user_content},
+    ]
+    content = _chat_with_lm_native_api(messages, max_tokens=400, temperature=0)
+    try:
+        if not (content or "").strip():
+            response = openai.chat.completions.create(
+                model=MODEL_NAME,
+                messages=messages,
+                temperature=0,
+                max_tokens=400,
+                response_format={"type": "json_object"},
+            )
+            content = _extract_completion_text(response)
+    except Exception:
+        pass
+
+    # Some LM Studio builds accept the endpoint but may return empty content
+    # when response_format is used; retry without response_format.
+    if not (content or "").strip():
+        response = openai.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            temperature=0,
+            max_tokens=400,
+        )
+        content = _extract_completion_text(response)
+
+    return _coerce_relevance_result(content)
 
 
 # score attendance name match
 
 def score_attendance(name, evidence_text):
+    evidence_text = _shrink_evidence_text(evidence_text, max_chars=24000)
     user_content = (
         "Name provided:\n"
         + (name or "")
@@ -286,14 +492,31 @@ def score_attendance(name, evidence_text):
         + "Attendance list content:\n"
         + (evidence_text or "")
     )
-    response = openai.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": attendance_instructions},
-            {"role": "user", "content": user_content},
-        ],
-        temperature=0,
-        max_tokens=400,
-    )
-    content = response.choices[0].message.content if response.choices else ""
-    return _parse_json_response(content)
+    messages = [
+        {"role": "system", "content": attendance_instructions},
+        {"role": "user", "content": user_content},
+    ]
+    content = _chat_with_lm_native_api(messages, max_tokens=400, temperature=0)
+    try:
+        if not (content or "").strip():
+            response = openai.chat.completions.create(
+                model=MODEL_NAME,
+                messages=messages,
+                temperature=0,
+                max_tokens=400,
+                response_format={"type": "json_object"},
+            )
+            content = _extract_completion_text(response)
+    except Exception:
+        pass
+
+    if not (content or "").strip():
+        response = openai.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            temperature=0,
+            max_tokens=400,
+        )
+        content = _extract_completion_text(response)
+
+    return _coerce_relevance_result(content)

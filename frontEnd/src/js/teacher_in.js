@@ -34,9 +34,9 @@ function ensureHoursFieldIn() {
   const timeField = startTimeIn?.closest(".field") || endTimeIn?.closest(".field");
   if (!timeField || !timeField.parentElement) return;
   const wrapper = document.createElement("label");
-  wrapper.className = "field span-2";
+  wrapper.className = "field";
   wrapper.innerHTML = `
-    <span class="lbl">活動時數（自動計算）</span>
+    <span class="lbl">活動時數（自動計算，最多4小時）</span>
     <input name="hours" id="hoursIn" type="text" readonly placeholder="1~4 小時">
   `;
   timeField.parentElement.insertBefore(wrapper, timeField.nextSibling);
@@ -134,6 +134,11 @@ function collectInCampusForm() {
   if (!formIn) return {};
   const fd = new FormData(formIn);
   const hours = calcRoundedHours(fd.get("startTime"), fd.get("endTime"));
+  const eventDateStart = fd.get("eventDateStart")?.toString().trim();
+  const eventDateEnd = fd.get("eventDateEnd")?.toString().trim();
+  const eventDate = eventDateStart && eventDateEnd
+    ? `${eventDateStart} ~ ${eventDateEnd}`
+    : eventDateStart || eventDateEnd || "";
 
   return {
     organizerDept: fd.get("organizerDept")?.toString().trim(),
@@ -141,7 +146,9 @@ function collectInCampusForm() {
     hostName: fd.get("hostName")?.toString().trim(),
     ext: fd.get("ext")?.toString().trim(),
     location: fd.get("location")?.toString().trim(),
-    eventDate: fd.get("eventDate")?.toString().trim(),
+    eventDateStart,
+    eventDateEnd,
+    eventDate,
     startTime: fd.get("startTime")?.toString().trim(),
     endTime: fd.get("endTime")?.toString().trim(),
     hours,
@@ -169,7 +176,11 @@ function validateInCampusForm(data) {
   if (!data.hostName) errs.push("\u8acb\u8f38\u5165\u4e3b(\u627f)\u8fa6\u4eba\u54e1\u3002");
   if (!data.ext) errs.push("\u8acb\u8f38\u5165\u806f\u7d61\u5206\u6a5f\u3002");
   if (!data.location) errs.push("\u8acb\u8f38\u5165\u6d3b\u52d5\u5730\u9ede\u3002");
-  if (!data.eventDate) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u65e5\u671f\u3002");
+  if (!data.eventDateStart) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u8d77\u59cb\u65e5\u671f\u3002");
+  if (!data.eventDateEnd) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u7d50\u675f\u65e5\u671f\u3002");
+  if (data.eventDateStart && data.eventDateEnd && data.eventDateEnd < data.eventDateStart) {
+    errs.push("\u6d3b\u52d5\u7d50\u675f\u65e5\u671f\u9700\u665a\u65bc\u6216\u7b49\u65bc\u8d77\u59cb\u65e5\u671f\u3002");
+  }
   if (!data.startTime || !data.endTime) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u6642\u9593\u3002");
   if (data.startTime && data.endTime && data.startTime >= data.endTime) {
     errs.push("\u7d50\u675f\u6642\u9593\u9700\u665a\u65bc\u958b\u59cb\u6642\u9593\u3002");

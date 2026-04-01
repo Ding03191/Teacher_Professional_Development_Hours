@@ -360,4 +360,9 @@ textarea{
 .ai-score{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:12px;}
 .ai-score-title{font-weight:600;color:var(--ink);}
 .ai-score-value{font-weight:700;background:#eef2ff;color:#1f2a44;padding:4px 10px;border-radius:999px;}
-.ai-score-msg{font-size:12px;color:var(--muted);}
+.ai-score-msg{
+  flex-basis:100%;
+  font-size:12px;
+  color:var(--muted);
+  margin-top:2px;
+}

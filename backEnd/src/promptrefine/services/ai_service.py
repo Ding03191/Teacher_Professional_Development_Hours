@@ -359,6 +359,29 @@ def _extract_text_from_json_payload(payload):
     if payload is None:
         return ""
 
+    # LM Studio REST v1 preferred shape:
+    # {
+    #   "output": [
+    #     {"type":"reasoning","content":"..."},
+    #     {"type":"message","content":"{\"score\":...}"}
+    #   ]
+    # }
+    if isinstance(payload, dict):
+        output = payload.get("output")
+        if isinstance(output, list):
+            # 1) Prefer assistant message content
+            for item in output:
+                if isinstance(item, dict) and item.get("type") == "message":
+                    c = (item.get("content") or "").strip()
+                    if c:
+                        return c
+            # 2) Then fallback to reasoning content
+            for item in output:
+                if isinstance(item, dict) and item.get("type") == "reasoning":
+                    c = (item.get("content") or "").strip()
+                    if c:
+                        return c
+
     # OpenAI-like
     if isinstance(payload, dict):
         choices = payload.get("choices")
@@ -381,7 +404,16 @@ def _extract_text_from_json_payload(payload):
                 v = node.get(k)
                 if isinstance(v, str) and v.strip():
                     return v.strip()
+            # Prefer traversing nested containers first; avoid returning arbitrary
+            # scalar strings like `id`/`model` before real assistant content.
+            nested_values = [v for v in node.values() if isinstance(v, (dict, list))]
+            for v in nested_values:
+                got = walk(v)
+                if got:
+                    return got
             for v in node.values():
+                if isinstance(v, str):
+                    continue
                 got = walk(v)
                 if got:
                     return got
@@ -390,10 +422,6 @@ def _extract_text_from_json_payload(payload):
                 got = walk(item)
                 if got:
                     return got
-        elif isinstance(node, str):
-            s = node.strip()
-            if s:
-                return s
         return ""
 
     return walk(payload)
@@ -410,15 +438,36 @@ def _chat_with_lm_native_api(messages, max_tokens=400, temperature=0):
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
+    # LM Studio REST v1 `/api/v1/chat` expects:
+    # - `input`: string | array<object>
+    # - `system_prompt`: string (optional)
+    # - `max_output_tokens` instead of `max_tokens`
+    system_prompt = ""
+    input_items = []
+    for m in messages or []:
+        role = (m or {}).get("role")
+        content = (m or {}).get("content")
+        if not isinstance(content, str):
+            continue
+        if role == "system":
+            system_prompt = (system_prompt + "\n" + content).strip() if system_prompt else content
+        else:
+            # keep as message-type input objects
+            input_items.append({"type": "message", "content": content})
+
     payload = {
         "model": MODEL_NAME,
-        "messages": messages,
-        "max_tokens": max_tokens,
+        "input": input_items,
         "temperature": temperature,
+        "max_output_tokens": max_tokens,
+        "store": False,
+        "stream": False,
     }
+    if system_prompt:
+        payload["system_prompt"] = system_prompt
 
-    try:
-        res = requests.post(chat_url, headers=headers, json=payload, timeout=60)
+    def _post_and_parse(req_payload):
+        res = requests.post(chat_url, headers=headers, json=req_payload, timeout=60)
         res.raise_for_status()
         try:
             body = res.json()
@@ -427,6 +476,34 @@ def _chat_with_lm_native_api(messages, max_tokens=400, temperature=0):
             return txt, ("" if txt else "lm_native_empty_text")
         txt = _extract_text_from_json_payload(body)
         return txt, ("" if txt else "lm_native_empty_payload")
+
+    try:
+        return _post_and_parse(payload)
+    except requests.HTTPError as e:
+        # fallback for older LM Studio builds: use plain text input format
+        input_text = "\n\n".join(
+            [item.get("content", "") for item in input_items if isinstance(item, dict)]
+        ).strip()
+        fallback_payload = {
+            "model": MODEL_NAME,
+            "input": input_text,
+            "temperature": temperature,
+            "max_output_tokens": max_tokens,
+            "store": False,
+            "stream": False,
+        }
+        if system_prompt:
+            fallback_payload["system_prompt"] = system_prompt
+        try:
+            return _post_and_parse(fallback_payload)
+        except Exception as e2:
+            detail = ""
+            try:
+                detail = (e.response.text or "").strip()
+            except Exception:
+                detail = ""
+            detail = detail[:180] if detail else str(e2)
+            return "", f"lm_native_error: {detail}"
     except Exception as e:
         return "", f"lm_native_error: {e}"
 
@@ -456,30 +533,6 @@ def score_relevance(relevance_text, evidence_text):
         {"role": "user", "content": user_content},
     ]
     content, native_err = _chat_with_lm_native_api(messages, max_tokens=400, temperature=0)
-    try:
-        if not (content or "").strip():
-            response = openai.chat.completions.create(
-                model=MODEL_NAME,
-                messages=messages,
-                temperature=0,
-                max_tokens=400,
-                response_format={"type": "json_object"},
-            )
-            content = _extract_completion_text(response)
-    except Exception:
-        pass
-
-    # Some LM Studio builds accept the endpoint but may return empty content
-    # when response_format is used; retry without response_format.
-    if not (content or "").strip():
-        response = openai.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            temperature=0,
-            max_tokens=400,
-        )
-        content = _extract_completion_text(response)
-
     result = _coerce_relevance_result(content)
     if result.get("score") == 0 and result.get("reason") == "模型未回傳內容，請稍後重試。":
         if native_err:
@@ -503,28 +556,6 @@ def score_attendance(name, evidence_text):
         {"role": "user", "content": user_content},
     ]
     content, native_err = _chat_with_lm_native_api(messages, max_tokens=400, temperature=0)
-    try:
-        if not (content or "").strip():
-            response = openai.chat.completions.create(
-                model=MODEL_NAME,
-                messages=messages,
-                temperature=0,
-                max_tokens=400,
-                response_format={"type": "json_object"},
-            )
-            content = _extract_completion_text(response)
-    except Exception:
-        pass
-
-    if not (content or "").strip():
-        response = openai.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            temperature=0,
-            max_tokens=400,
-        )
-        content = _extract_completion_text(response)
-
     result = _coerce_relevance_result(content)
     if result.get("score") == 0 and result.get("reason") == "模型未回傳內容，請稍後重試。":
         if native_err:

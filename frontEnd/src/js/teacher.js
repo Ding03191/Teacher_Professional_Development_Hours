@@ -8,8 +8,8 @@ const certNoBox = document.getElementById("certNoBox");
 const btnScoreOut = document.getElementById("btnScoreOut");
 const relevanceScoreValue = document.getElementById("relevanceScoreValue");
 const relevanceScoreMsg = document.getElementById("relevanceScoreMsg");
-const startTimeOut = document.querySelector('input[name="startTime"]');
-const endTimeOut = document.querySelector('input[name="endTime"]');
+const timeSlotsOut = document.getElementById("timeSlotsOut");
+const btnAddTimeSlotOut = document.getElementById("btnAddTimeSlotOut");
 let hoursInputOut = null;
 
 function timeToMinutes(value) {
@@ -19,34 +19,17 @@ function timeToMinutes(value) {
   return hh * 60 + mm;
 }
 
-function calcRoundedHours(start, end) {
-  const s = timeToMinutes(start);
-  const e = timeToMinutes(end);
-  if (s === null || e === null || e <= s) return "";
-  const diffHours = (e - s) / 60;
-  const rounded = Math.round(diffHours);
+function calcRoundedHoursFromSlots(slots) {
+  const totalMinutes = slots.reduce((sum, slot) => {
+    const s = timeToMinutes(slot.startTime);
+    const e = timeToMinutes(slot.endTime);
+    if (s === null || e === null || e <= s) return sum;
+    return sum + (e - s);
+  }, 0);
+  if (totalMinutes <= 0) return "";
+  const rounded = Math.round(totalMinutes / 60);
   const clamped = Math.min(4, Math.max(1, rounded));
   return clamped.toString();
-}
-
-function ensureHoursFieldOut() {
-  if (!formT || hoursInputOut) return;
-  const timeField = startTimeOut?.closest(".field") || endTimeOut?.closest(".field");
-  if (!timeField || !timeField.parentElement) return;
-  const wrapper = document.createElement("label");
-  wrapper.className = "field";
-  wrapper.innerHTML = `
-    <span class="lbl">活動時數（自動計算，最多4小時）</span>
-    <input name="hours" id="hoursOut" type="text" readonly placeholder="1~4 小時">
-  `;
-  timeField.parentElement.insertBefore(wrapper, timeField.nextSibling);
-  hoursInputOut = wrapper.querySelector("input");
-}
-
-function updateHoursOut() {
-  if (!hoursInputOut) return;
-  const hours = calcRoundedHours(startTimeOut?.value, endTimeOut?.value);
-  hoursInputOut.value = hours;
 }
 
 function setMsg(type, text) {
@@ -61,26 +44,82 @@ function setScoreMsg(type, text) {
   relevanceScoreMsg.innerHTML = `<span style="color:${color}">${text}</span>`;
 }
 
-formT?.addEventListener("change", (e) => {
-  const target = e.target;
-  if (target?.name === "hasCert") {
-    certNoBox?.classList.toggle("is-hidden", target.value !== "yes");
+async function rollbackApplication(appId) {
+  if (!appId) return;
+  try {
+    await fetch(`${API_BASE}/api/applications/${appId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+  } catch (_) {
+    // Ignore rollback errors; the user-facing error is handled by submit flow.
   }
-});
+}
 
-filesInput?.addEventListener("change", () => {
-  if (!fileList) return;
-  fileList.innerHTML = "";
-  Array.from(filesInput.files || []).forEach((f, i) => {
-    const li = document.createElement("li");
-    li.textContent = `${i + 1}. ${f.name} (${Math.round(f.size / 1024)} KB)`;
-    fileList.appendChild(li);
+function createTimeSlotRow(slot = {}) {
+  const row = document.createElement("div");
+  row.className = "time-slot-row";
+  row.innerHTML = `
+    <input type="time" class="slot-start" value="${slot.startTime || ""}" required>
+    <span class="time-slot-sep">～</span>
+    <input type="time" class="slot-end" value="${slot.endTime || ""}" required>
+    <button type="button" class="btn ghost slot-remove">刪除</button>
+  `;
+  return row;
+}
+
+function ensureTimeSlotsOut() {
+  if (!timeSlotsOut) return;
+  if (timeSlotsOut.children.length > 0) return;
+  timeSlotsOut.appendChild(createTimeSlotRow());
+  refreshTimeSlotRemoveState();
+}
+
+function refreshTimeSlotRemoveState() {
+  if (!timeSlotsOut) return;
+  const rows = Array.from(timeSlotsOut.querySelectorAll(".time-slot-row"));
+  rows.forEach((row, index) => {
+    const btn = row.querySelector(".slot-remove");
+    if (!btn) return;
+    btn.disabled = rows.length === 1;
+    btn.style.visibility = rows.length === 1 && index === 0 ? "hidden" : "visible";
   });
-});
+}
+
+function getTimeSlotsOut() {
+  if (!timeSlotsOut) return [];
+  return Array.from(timeSlotsOut.querySelectorAll(".time-slot-row")).map((row) => {
+    const startTime = row.querySelector(".slot-start")?.value?.trim() || "";
+    const endTime = row.querySelector(".slot-end")?.value?.trim() || "";
+    return { startTime, endTime };
+  });
+}
+
+function ensureHoursFieldOut() {
+  if (!formT || hoursInputOut) return;
+  const timeField = timeSlotsOut?.closest(".field");
+  if (!timeField || !timeField.parentElement) return;
+  const wrapper = document.createElement("label");
+  wrapper.className = "field";
+  wrapper.innerHTML = `
+    <span class="lbl">活動時數（自動計算，最多4小時）</span>
+    <input name="hours" id="hoursOut" type="text" readonly placeholder="1~4 小時">
+  `;
+  timeField.parentElement.insertBefore(wrapper, timeField.nextSibling);
+  hoursInputOut = wrapper.querySelector("input");
+}
+
+function updateHoursOut() {
+  if (!hoursInputOut) return;
+  const hours = calcRoundedHoursFromSlots(getTimeSlotsOut());
+  hoursInputOut.value = hours;
+}
 
 function collectTeacherForm() {
   const fd = new FormData(formT);
-  const hours = calcRoundedHours(fd.get("startTime"), fd.get("endTime"));
+  const timeSlots = getTimeSlotsOut();
+  const hours = calcRoundedHoursFromSlots(timeSlots);
+  const firstSlot = timeSlots[0] || { startTime: "", endTime: "" };
   return {
     teacherName: fd.get("teacherName")?.toString().trim(),
     department: fd.get("department")?.toString().trim(),
@@ -88,8 +127,9 @@ function collectTeacherForm() {
     ext: fd.get("ext")?.toString().trim() || "",
     eventDateStart: fd.get("eventDateStart"),
     eventDateEnd: fd.get("eventDateEnd"),
-    startTime: fd.get("startTime"),
-    endTime: fd.get("endTime"),
+    startTime: firstSlot.startTime,
+    endTime: firstSlot.endTime,
+    timeSlots,
     hours,
     courseTitle: fd.get("courseTitle")?.toString().trim(),
     organizer: fd.get("organizer")?.toString().trim(),
@@ -105,29 +145,95 @@ function collectTeacherForm() {
   };
 }
 
+function validateTimeSlots(slots) {
+  if (!Array.isArray(slots) || slots.length === 0) return "請至少新增 1 個活動時段。";
+
+  const parsed = [];
+  for (let i = 0; i < slots.length; i += 1) {
+    const slot = slots[i] || {};
+    const s = timeToMinutes(slot.startTime);
+    const e = timeToMinutes(slot.endTime);
+    if (s === null || e === null) return `第 ${i + 1} 個時段請填寫完整開始與結束時間。`;
+    if (e <= s) return `第 ${i + 1} 個時段結束時間需晚於開始時間。`;
+    parsed.push({ s, e, idx: i + 1 });
+  }
+
+  parsed.sort((a, b) => a.s - b.s);
+  for (let i = 1; i < parsed.length; i += 1) {
+    if (parsed[i].s < parsed[i - 1].e) {
+      return `第 ${parsed[i - 1].idx} 與第 ${parsed[i].idx} 個時段有重疊。`;
+    }
+  }
+
+  return "";
+}
+
 function validateTeacher() {
   const d = collectTeacherForm();
   const errs = [];
-  if (!d.teacherName) errs.push("\u8acb\u8f38\u5165\u6559\u5e2b\u59d3\u540d\u3002");
-  if (!d.department) errs.push("\u8acb\u8f38\u5165\u4efb\u6559\u55ae\u4f4d\u3002");
-  if (!d.teacherId) errs.push("\u8acb\u8f38\u5165\u6559\u5e2b\u7de8\u865f\u3002");
-  if (!d.eventDateStart) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u8d77\u59cb\u65e5\u671f\u3002");
-  if (!d.eventDateEnd) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u7d50\u675f\u65e5\u671f\u3002");
+  if (!d.teacherName) errs.push("請輸入教師姓名。");
+  if (!d.department) errs.push("請輸入任教單位。");
+  if (!d.teacherId) errs.push("請輸入教師編號。");
+  if (!d.eventDateStart) errs.push("請選擇活動起始日期。");
+  if (!d.eventDateEnd) errs.push("請選擇活動結束日期。");
   if (d.eventDateStart && d.eventDateEnd && d.eventDateEnd < d.eventDateStart) {
-    errs.push("\u6d3b\u52d5\u7d50\u675f\u65e5\u671f\u9700\u665a\u65bc\u6216\u7b49\u65bc\u8d77\u59cb\u65e5\u671f\u3002");
+    errs.push("活動結束日期需晚於或等於起始日期。");
   }
-  if (!d.startTime || !d.endTime) errs.push("\u8acb\u9078\u64c7\u6d3b\u52d5\u6642\u9593\u3002");
-  if (d.startTime && d.endTime && d.startTime >= d.endTime) {
-    errs.push("\u7d50\u675f\u6642\u9593\u9700\u665a\u65bc\u958b\u59cb\u6642\u9593\u3002");
-  }
-  if (!d.courseTitle) errs.push("\u8acb\u8f38\u5165\u6d3b\u52d5\u540d\u7a31\u3002");
-  if (!d.organizer) errs.push("\u8acb\u8f38\u5165\u8209\u8fa6\u55ae\u4f4d\u3002");
-  if (!d.relevance) errs.push("\u8acb\u586b\u5beb\u6559\u5b78\u5c08\u696d\u6210\u9577\u3002");
-  if (!d.hasCert) errs.push("\u8acb\u9078\u64c7\u662f\u5426\u6838\u767c\u8b49\u66f8\u3002");
-  if (d.hasCert === "yes" && !d.certNo) errs.push("\u8acb\u8f38\u5165\u8b49\u66f8\u5b57\u865f\u3002");
-  if (!d.attachmentCount) errs.push("\u8acb\u81f3\u5c11\u4e0a\u50b3 1 \u4efd\u9644\u4ef6\u3002");
+  const slotErr = validateTimeSlots(d.timeSlots);
+  if (slotErr) errs.push(slotErr);
+  if (!d.courseTitle) errs.push("請輸入活動名稱。");
+  if (!d.organizer) errs.push("請輸入舉辦單位。");
+  if (!d.relevance) errs.push("請填寫教學專業成長。");
+  if (!d.hasCert) errs.push("請選擇是否核發證書。");
+  if (d.hasCert === "yes" && !d.certNo) errs.push("請輸入證書字號。");
+  if (!d.attachmentCount) errs.push("請至少上傳 1 份附件。");
   return errs;
 }
+
+formT?.addEventListener("change", (e) => {
+  const target = e.target;
+  if (target?.name === "hasCert") {
+    certNoBox?.classList.toggle("is-hidden", target.value !== "yes");
+  }
+});
+
+timeSlotsOut?.addEventListener("input", (e) => {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.classList.contains("slot-start") || target.classList.contains("slot-end")) {
+    updateHoursOut();
+  }
+});
+
+timeSlotsOut?.addEventListener("click", (e) => {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (!target.classList.contains("slot-remove")) return;
+  const row = target.closest(".time-slot-row");
+  if (!row) return;
+  row.remove();
+  if (!timeSlotsOut.querySelector(".time-slot-row")) {
+    timeSlotsOut.appendChild(createTimeSlotRow());
+  }
+  refreshTimeSlotRemoveState();
+  updateHoursOut();
+});
+
+btnAddTimeSlotOut?.addEventListener("click", () => {
+  if (!timeSlotsOut) return;
+  timeSlotsOut.appendChild(createTimeSlotRow());
+  refreshTimeSlotRemoveState();
+});
+
+filesInput?.addEventListener("change", () => {
+  if (!fileList) return;
+  fileList.innerHTML = "";
+  Array.from(filesInput.files || []).forEach((f, i) => {
+    const li = document.createElement("li");
+    li.textContent = `${i + 1}. ${f.name} (${Math.round(f.size / 1024)} KB)`;
+    fileList.appendChild(li);
+  });
+});
 
 formT?.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -137,10 +243,16 @@ formT?.addEventListener("submit", (e) => {
     msgEl.innerHTML = `<span style="color:#dc2626">${errs.join("<br>")}</span>`;
     return;
   }
-  if (!confirm("\u78ba\u8a8d\u8981\u9001\u51fa\u7533\u8acb\u55ce\uff1f")) return;
+  if (!confirm("確認要送出申請嗎？")) return;
 
-  setMsg("success", "\u9001\u51fa\u4e2d\uff0c\u8acb\u7a0d\u5019\u2026");
+  setMsg("success", "送出中，請稍候…");
   const data = collectTeacherForm();
+  const timeSlotsPayload = data.timeSlots.map((slot, idx) => ({
+    slot_date: data.eventDateStart || "",
+    start_time: slot.startTime,
+    end_time: slot.endTime,
+    sort_order: idx,
+  }));
 
   fetch(`${API_BASE}/api/applications`, {
     method: "POST",
@@ -149,6 +261,7 @@ formT?.addEventListener("submit", (e) => {
     body: JSON.stringify({
       app_type: "out",
       data,
+      time_slots: timeSlotsPayload,
       summary: {
         event_name: data.courseTitle,
         event_date: data.eventDateStart && data.eventDateEnd
@@ -159,33 +272,35 @@ formT?.addEventListener("submit", (e) => {
     }),
   })
     .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
-    .then(({ ok, body }) => {
+    .then(async ({ ok, body }) => {
       if (!ok || body.ok === false) throw new Error(body.error || "submit_failed");
       const appId = body.data?.id;
       const files = Array.from(filesInput?.files || []);
       if (!appId || files.length === 0) {
-        setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
-        setTimeout(() => (window.location.href = "history.html"), 300);
-        return;
+        await rollbackApplication(appId);
+        throw new Error("送出失敗：缺少申請編號或附件。");
       }
       const fd = new FormData();
       files.forEach((file) => fd.append("files", file));
-      return fetch(`${API_BASE}/api/applications/${appId}/files`, {
-        method: "POST",
-        credentials: "include",
-        body: fd,
-      })
-        .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
-        .then(({ ok, body }) => {
-          if (!ok || body.ok === false) {
-            if (body.error === "only_pdf_or_xlsx_allowed") {
-              throw new Error("\u53ea\u652f\u63f4 PDF \u6216 Excel\uff08.xlsx\uff09\u6a94\u6848\u3002");
-            }
-            throw new Error(body.error || "upload_failed");
-          }
-          setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
-          setTimeout(() => (window.location.href = "history.html"), 300);
+      try {
+        const uploadRes = await fetch(`${API_BASE}/api/applications/${appId}/files`, {
+          method: "POST",
+          credentials: "include",
+          body: fd,
         });
+        const uploadBody = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok || uploadBody.ok === false) {
+          if (uploadBody.error === "only_pdf_or_xlsx_allowed" || uploadBody.error === "only_supported_file_types") {
+            throw new Error("只支援 PDF、Excel（.xlsx）或圖檔（JPG/PNG/WebP/GIF/BMP）。");
+          }
+          throw new Error(uploadBody.error || "upload_failed");
+        }
+      } catch (error) {
+        await rollbackApplication(appId);
+        throw error;
+      }
+      setMsg("success", "送出成功，將前往歷史紀錄。");
+      setTimeout(() => (window.location.href = "history"), 300);
     })
     .catch((err) => setMsg("error", err.message));
 });
@@ -211,13 +326,13 @@ function fillPdfForm(d) {
   setText("pdf_relevance", d.relevance);
 
   let hasCertText = "";
-  if (d.hasCert === "yes") hasCertText = "\u662f";
-  else if (d.hasCert === "no") hasCertText = "\u5426";
+  if (d.hasCert === "yes") hasCertText = "是";
+  else if (d.hasCert === "no") hasCertText = "否";
   setText("pdf_hasCert", hasCertText);
 
   setText(
     "pdf_certNo",
-    d.hasCert === "yes" && d.certNo ? `\u8b49\u66f8\u5b57\u865f\uff1a${d.certNo}` : ""
+    d.hasCert === "yes" && d.certNo ? `證書字號：${d.certNo}` : ""
   );
 
   const filesEl = document.getElementById("pdf_files");
@@ -225,18 +340,17 @@ function fillPdfForm(d) {
     const list = Array.from(filesInput?.files || [])
       .map((f, i) => `${i + 1}. ${f.name}`)
       .join("\n");
-    filesEl.textContent = list || "\uff08\u7121\u9644\u4ef6\uff09";
+    filesEl.textContent = list || "（無附件）";
   }
 }
 
-// expose for other scripts if needed
 window.fillPdfForm = fillPdfForm;
 
 document.addEventListener("DOMContentLoaded", () => {
+  ensureTimeSlotsOut();
   ensureHoursFieldOut();
+  refreshTimeSlotRemoveState();
   updateHoursOut();
-  startTimeOut?.addEventListener("change", updateHoursOut);
-  endTimeOut?.addEventListener("change", updateHoursOut);
 });
 
 btnScoreOut?.addEventListener("click", async () => {
@@ -280,7 +394,9 @@ btnScoreOut?.addEventListener("click", async () => {
     const result = body.data || {};
     const score = result.score;
     const reason = result.reason || "";
-    if (relevanceScoreValue) relevanceScoreValue.textContent = typeof score === "number" ? `${score} / 5` : "完成";
+    if (relevanceScoreValue) {
+      relevanceScoreValue.textContent = typeof score === "number" ? `${score} / 5` : "完成";
+    }
     setScoreMsg("success", reason ? `原因：${reason}` : "評分完成");
   } catch (err) {
     if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";

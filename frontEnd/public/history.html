@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
@@ -14,17 +14,17 @@
       <div class="topbar-actions">
         <span class="topbar-user" aria-hidden="true">◎</span>
         <span id="topbarAccount" class="topbar-account"></span>
-        <a id="topbarLoginLink" class="topbar-link" href="admin.html">登入</a>
-        <a id="topbarSettingsLink" class="topbar-link is-hidden" href="admin.html">設定</a>
+        <a id="topbarLoginLink" class="topbar-link" href="admin">登入</a>
         <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
       </div>
     </header>
     <aside class="layout-sidebar">
       <nav class="sidebar-nav">
-        <a class="nav-link" href="teacher_in.html">校內申請</a>
-        <a class="nav-link" href="teacher.html">校外申請</a>
-        <a class="nav-link active" href="history.html">歷史紀錄</a>
-        <a class="nav-link root-only" data-role="root" href="review.html">時數審核</a>
+        <a class="nav-link" href="teacher_in">校內申請</a>
+        <a class="nav-link" href="teacher">校外申請</a>
+        <a class="nav-link active" href="history">歷史紀錄</a>
+        <a class="nav-link root-only" data-role="root" href="review">時數審核</a>
+        <a class="nav-link root-only" data-role="root" href="user_management">使用者管理</a>
       </nav>
       <div class="sidebar-footer">
         <button class="lang-btn" type="button">語言切換</button>
@@ -37,9 +37,9 @@
       <h1>歷史紀錄</h1>
     </div>
     <nav class="appbar-actions">
-      <a class="btn" href="teacher.html">校外申請</a>
-      <a class="btn" href="teacher_in.html">校內申請</a>
-      <a class="btn ghost" href="admin.html">管理</a>
+      <a class="btn" href="teacher">校外申請</a>
+      <a class="btn" href="teacher_in">校內申請</a>
+      <a class="btn ghost" href="admin">管理</a>
     </nav>
   </header>
 
@@ -53,7 +53,9 @@
           <button class="tab" data-type="out" type="button">校外</button>
         </div>
         <div class="actions">
-          <button id="btnRefresh" class="btn" type="button">更新</button>
+          <button id="btnRefresh" class="btn btn-icon" type="button" aria-label="更新" title="更新">
+            <img src="icon/reload.png" alt="更新" />
+          </button>
           <span id="historyMsg" class="msg"></span>
         </div>
       </div>
@@ -68,3 +70,4 @@
   <script src="../src/js/history.js" defer></script>
 </body>
 </html>
+

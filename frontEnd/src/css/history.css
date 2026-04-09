@@ -121,6 +121,21 @@ input {
   background: transparent;
 }
 
+.btn.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn.btn-icon img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
 .msg {
   min-height: 20px;
   font-size: 13px;
@@ -662,4 +677,14 @@ textarea {
   .detail-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.history-summary-link {
+  text-decoration: none;
+  color: inherit;
+  display: grid;
+}
+
+.history-summary-link:hover {
+  background: #f8fafc;
 }

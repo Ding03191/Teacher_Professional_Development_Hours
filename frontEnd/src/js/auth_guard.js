@@ -1,46 +1,51 @@
-window.API_BASE = window.API_BASE || "";
+﻿window.API_BASE = window.API_BASE || "";
 
 const topbarUser = document.querySelector(".topbar-user");
 const logoutBtn = document.getElementById("btnLogoutTop");
 const topbarLoginLink = document.getElementById("topbarLoginLink");
-const topbarSettingsLink = document.getElementById("topbarSettingsLink");
 const topbarAccount = document.getElementById("topbarAccount");
-const ROOT_ROLE_CACHE_KEY = "auth_role_cached";
-const ROOT_NAV_LABEL = "時數審核";
 
-function normalizeRootNavLabel() {
-  document.querySelectorAll("[data-role='root']").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    el.textContent = ROOT_NAV_LABEL;
-  });
-}
+function ensureRootSidebarLinks() {
+  const nav = document.querySelector(".sidebar-nav");
+  if (!(nav instanceof HTMLElement)) return;
 
-function applyCachedRole() {
-  const cachedRole = (localStorage.getItem(ROOT_ROLE_CACHE_KEY) || "").trim();
-  if (cachedRole === "root") {
-    document.body.classList.add("is-root");
-  } else {
-    document.body.classList.remove("is-root");
-  }
+  const ensureLink = (href, text) => {
+    let link = nav.querySelector(`a[href="${href}"]`);
+    if (!(link instanceof HTMLAnchorElement)) {
+      link = document.createElement("a");
+      link.href = href;
+      link.textContent = text;
+      link.className = "nav-link root-only";
+      link.setAttribute("data-role", "root");
+      nav.appendChild(link);
+    } else {
+      link.classList.add("nav-link", "root-only");
+      link.setAttribute("data-role", "root");
+      link.textContent = text;
+    }
+
+    const currentPage = window.location.pathname.split("/").pop();
+    link.classList.toggle("active", currentPage === href);
+  };
+
+  ensureLink("review", "時數審核");
+  ensureLink("user_management", "使用者管理");
 }
 
 function getTopbarLinks() {
   const loginText = "\u767b\u5165";
-  const settingsText = "\u8a2d\u5b9a";
   let login = topbarLoginLink;
-  let settings = topbarSettingsLink;
 
-  if (!login || !settings) {
+  if (!login) {
     const links = Array.from(document.querySelectorAll(".topbar-link"));
     for (const link of links) {
       if (!(link instanceof HTMLElement)) continue;
       const text = (link.textContent || "").trim();
       if (!login && text === loginText) login = link;
-      if (!settings && text === settingsText) settings = link;
     }
   }
 
-  return { login, settings };
+  return { login };
 }
 
 
@@ -82,8 +87,8 @@ async function guard() {
     const user = await fetchMe();
     window.__authUser = user;
     setAvatar(user);
-    localStorage.setItem(ROOT_ROLE_CACHE_KEY, user?.role || "");
     document.body.classList.toggle("is-root", user?.role === "root");
+    if (user?.role === "root") ensureRootSidebarLinks();
     document.querySelectorAll("[data-role='root']").forEach((el) => {
       if (user?.role !== "root") {
         el.classList.add("is-hidden");
@@ -91,9 +96,8 @@ async function guard() {
         el.classList.remove("is-hidden");
       }
     });
-    const { login, settings } = getTopbarLinks();
+    const { login } = getTopbarLinks();
     login?.classList.add("is-hidden");
-    settings?.classList.remove("is-hidden");
     if (logoutBtn) {
       logoutBtn.classList.remove("is-hidden");
       logoutBtn.addEventListener("click", async () => {
@@ -101,21 +105,18 @@ async function guard() {
           method: "POST",
           credentials: "include",
         });
-        window.location.href = "admin.html";
+        window.location.href = "admin";
       });
     }
     return user;
   } catch (err) {
-    localStorage.removeItem(ROOT_ROLE_CACHE_KEY);
     if (logoutBtn) logoutBtn.classList.add("is-hidden");
-    const { login, settings } = getTopbarLinks();
+    const { login } = getTopbarLinks();
     login?.classList.remove("is-hidden");
-    settings?.classList.add("is-hidden");
-    window.location.href = "admin.html";
+    window.location.href = "admin";
     throw err;
   }
 }
 
-normalizeRootNavLabel();
-applyCachedRole();
 window.__authUserPromise = guard();
+

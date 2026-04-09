@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../src/css/layout.css">
-  <title>教師帳號登入</title>
+  <title>國立勤益科技大學教師成長時數平台</title>
   <link rel="stylesheet" href="../src/css/admin.css" />
   <style>
     .login-shell {
@@ -231,17 +231,17 @@
       <div class="topbar-actions">
         <span class="topbar-user" aria-hidden="true">◎</span>
         <span id="topbarAccount" class="topbar-account"></span>
-        <a id="topbarLoginLink" class="topbar-link" href="admin.html">登入</a>
-        <a id="topbarSettingsLink" class="topbar-link is-hidden" href="admin.html">設定</a>
+        <a id="topbarLoginLink" class="topbar-link" href="admin">登入</a>
         <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
       </div>
     </header>
     <aside class="layout-sidebar">
       <nav class="sidebar-nav">
-        <a class="nav-link" href="teacher_in.html">校內申請</a>
-        <a class="nav-link" href="teacher.html">校外申請</a>
-        <a class="nav-link" href="history.html">歷史記錄</a>
-        <a class="nav-link root-only" data-role="root" href="review.html">時數審核</a>
+        <a class="nav-link" href="teacher_in">校內申請</a>
+        <a class="nav-link" href="teacher">校外申請</a>
+        <a class="nav-link" href="history">歷史記錄</a>
+        <a class="nav-link root-only" data-role="root" href="review">時數審核</a>
+        <a class="nav-link root-only" data-role="root" href="user_management">使用者管理</a>
       </nav>
       <div class="sidebar-footer">
         <button class="lang-btn" type="button">語言切換</button>
@@ -251,12 +251,12 @@
   <header class="appbar">
     <div class="brand">
       <span class="brand-badge" aria-hidden="true"></span>
-      <h1>教師帳號登入</h1>
+      <h1>國立勤益科技大學教師成長時數平台</h1>
     </div>
     <nav class="appbar-actions is-hidden">
-      <a class="btn" href="history.html">History</a>
-      <a class="btn" href="teacher.html">教師申請表</a>
-      <a class="btn" href="teacher_in.html">校內活動表</a>
+      <a class="btn" href="history">History</a>
+      <a class="btn" href="teacher">教師申請表</a>
+      <a class="btn" href="teacher_in">校內活動表</a>
       <button id="btnLogout" class="btn ghost is-hidden" type="button">登出</button>
     </nav>
   </header>
@@ -268,38 +268,32 @@
 
       <div class="login-card">
         <div class="login-header">
-          <div class="login-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" role="img" aria-hidden="true">
-              <path d="M12 2a7 7 0 0 1 7 7v2h1.5a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 20.5 22h-17A1.5 1.5 0 0 1 2 20.5v-8A1.5 1.5 0 0 1 3.5 11H5V9a7 7 0 0 1 7-7Zm0 2a5 5 0 0 0-5 5v2h10V9a5 5 0 0 0-5-5Z"></path>
-            </svg>
-          </div>
-          <h2>Welcome Back</h2>
-          <p class="login-subtitle">Sign in to continue to your account</p>
+          <h2>國立勤益科技大學教師成長時數平台</h2>
         </div>
 
         <form id="loginForm" class="login-form">
           <label class="login-field">
-            <span class="lbl">Account</span>
+            <span class="lbl">帳號</span>
             <span class="input-wrap">
               <span class="input-icon" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                   <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.4 0-8 2.24-8 5v1h16v-1c0-2.76-3.6-5-8-5Z"></path>
                 </svg>
               </span>
-              <input name="account" type="text" placeholder="Enter your account" required />
+              <input name="account" type="text" placeholder="請輸入帳號" required />
             </span>
           </label>
 
           <label class="login-field">
-            <span class="lbl">Password</span>
+            <span class="lbl">密碼</span>
             <span class="input-wrap">
               <span class="input-icon" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                   <path d="M12 2a6 6 0 0 1 6 6v3h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h2V8a6 6 0 0 1 6-6Zm0 2a4 4 0 0 0-4 4v3h8V8a4 4 0 0 0-4-4Z"></path>
                 </svg>
               </span>
-              <input id="loginPassword" name="password" type="password" placeholder="Enter your password" required />
-              <button class="toggle-password" type="button" aria-label="Show password" data-toggle="password">
+              <input id="loginPassword" name="password" type="password" placeholder="請輸入密碼" required />
+              <button class="toggle-password" type="button" aria-label="顯示密碼" data-toggle="password">
                 <svg class="eye-on" width="18" height="18" viewBox="0 0 24 24">
                   <path d="M12 5c5.33 0 9.6 3.05 11 7-1.4 3.95-5.67 7-11 7S2.4 15.95 1 12c1.4-3.95 5.67-7 11-7Zm0 3a4 4 0 1 0 4 4 4 4 0 0 0-4-4Z"></path>
                 </svg>
@@ -312,15 +306,15 @@
 
           <label class="remember-row">
             <input type="checkbox" />
-            <span>Remember me</span>
+            <span>記住我</span>
           </label>
 
-          <button class="btn login-submit" type="submit">Sign In</button>
+          <button class="btn login-submit" type="submit">登入</button>
           <div id="loginMsg" class="msg"></div>
         </form>
 
         <div class="login-divider">
-          <span>Or continue with</span>
+          <span>或使用以下方式</span>
         </div>
 
         <button class="google-btn" type="button">
@@ -330,71 +324,11 @@
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"></path>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"></path>
           </svg>
-          <span>Continue with Google</span>
+          <span>使用 Google 登入</span>
         </button>
       </div>
     </section>
 
-    <section id="adminPanel" class="is-hidden">
-      <div class="section-hd">
-        <h2>使用者管理</h2>
-        <p id="adminHint" class="muted"></p>
-      </div>
-
-      <article class="card">
-        <div class="card-hd">新增使用者</div>
-        <div class="card-bd">
-          <form id="createForm" class="form grid g-2">
-            <label class="field">
-              <span class="lbl">姓名</span>
-              <input name="name" required />
-            </label>
-            <label class="field">
-              <span class="lbl">Email</span>
-              <input name="email" type="email" required />
-            </label>
-            <label class="field">
-              <span class="lbl">密碼</span>
-              <input name="password" type="password" required />
-            </label>
-            <label class="field">
-              <span class="lbl">角色</span>
-              <select name="role">
-                <option value="teacher">teacher</option>
-                <option value="staff">staff</option>
-                <option value="root">root</option>
-              </select>
-            </label>
-            <div class="actions span-2">
-              <button class="btn primary" type="submit">新增</button>
-              <span id="createMsg" class="msg"></span>
-            </div>
-          </form>
-        </div>
-      </article>
-
-      <article class="card">
-        <div class="card-hd">使用者列表</div>
-        <div class="card-bd">
-          <div class="table-wrap">
-            <table class="table" id="userTable">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>姓名</th>
-                  <th>Email</th>
-                  <th>角色</th>
-                  <th>建立時間</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div id="listMsg" class="msg"></div>
-        </div>
-      </article>
-    </section>
   </main>
 
   <footer class="site-footer">
@@ -408,3 +342,4 @@
   <script src="../src/js/admin.js" defer></script>
 </body>
 </html>
+

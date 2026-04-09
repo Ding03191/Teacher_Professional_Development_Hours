@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
@@ -14,17 +14,17 @@
       <div class="topbar-actions">
         <span class="topbar-user" aria-hidden="true">◎</span>
         <span id="topbarAccount" class="topbar-account"></span>
-        <a id="topbarLoginLink" class="topbar-link" href="admin.html">登入</a>
-        <a id="topbarSettingsLink" class="topbar-link is-hidden" href="admin.html">設定</a>
+        <a id="topbarLoginLink" class="topbar-link" href="admin">登入</a>
         <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
       </div>
     </header>
     <aside class="layout-sidebar">
       <nav class="sidebar-nav">
-        <a class="nav-link" href="teacher_in.html">校內申請</a>
-        <a class="nav-link active" href="teacher.html">校外申請</a>
-        <a class="nav-link" href="history.html">歷史記錄</a>
-        <a class="nav-link root-only" data-role="root" href="review.html">時數審核</a>
+        <a class="nav-link" href="teacher_in">校內申請</a>
+        <a class="nav-link active" href="teacher">校外申請</a>
+        <a class="nav-link" href="history">歷史記錄</a>
+        <a class="nav-link root-only" data-role="root" href="review">時數審核</a>
+        <a class="nav-link root-only" data-role="root" href="user_management">使用者管理</a>
       </nav>
       <div class="sidebar-footer">
         <button class="lang-btn" type="button">語言切換</button>
@@ -38,7 +38,7 @@
       <h1>教師成長時數申請平台</h1>
     </div>
     <div class="appbar-actions">
-      <a class="btn" href="history.html">History</a>
+      <a class="btn" href="history">History</a>
       <!-- 右邊放一個連到審核系統的按鈕 -->
       <a class="btn" href="index.html#reward">前往 AI 審核系統</a>
     </div>
@@ -175,10 +175,9 @@
 
               <div class="field">
                 <span class="lbl req">活動起訖時間</span>
-                <div class="row row-time">
-                  <input name="startTime" type="time" required>
-                  <span class="muted">～</span>
-                  <input name="endTime" type="time" required>
+                <div id="timeSlotsOut" class="time-slots"></div>
+                <div class="row">
+                  <button id="btnAddTimeSlotOut" type="button" class="btn ghost">+ 新增時段</button>
                 </div>
               </div>
 
@@ -219,8 +218,8 @@
               <span class="lbl req">上傳等佐證參與活動資料（可多檔）</span>
               <div class="uploader">
                 <input id="files" type="file" multiple
-                       accept=".pdf" required>
-                <p class="muted">請至少上傳 1 份：證書影本、時數條或研習手冊封面影本。</p>
+                       accept=".pdf,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp" required>
+                <p class="muted">請至少上傳 1 份：PDF、Excel 或圖檔（JPG/PNG/WebP/GIF/BMP）。</p>
                 <ul id="fileList" class="file-list"></ul>
                 <div class="ai-score">
                   <div class="ai-score-title">AI 相關度評分</div>
@@ -260,3 +259,4 @@
   <script src="../src/js/teacher.js" defer></script>
 </body>
 </html>
+

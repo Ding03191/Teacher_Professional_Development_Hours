@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
@@ -14,17 +14,17 @@
       <div class="topbar-actions">
         <span class="topbar-user" aria-hidden="true">◎</span>
         <span id="topbarAccount" class="topbar-account"></span>
-        <a id="topbarLoginLink" class="topbar-link" href="admin.html">登入</a>
-        <a id="topbarSettingsLink" class="topbar-link is-hidden" href="admin.html">設定</a>
+        <a id="topbarLoginLink" class="topbar-link" href="admin">登入</a>
         <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
       </div>
     </header>
     <aside class="layout-sidebar">
       <nav class="sidebar-nav">
-        <a class="nav-link active" href="teacher_in.html">校內申請</a>
-        <a class="nav-link" href="teacher.html">校外申請</a>
-        <a class="nav-link" href="history.html">歷史記錄</a>
-        <a class="nav-link root-only" data-role="root" href="review.html">時數審核</a>
+        <a class="nav-link active" href="teacher_in">校內申請</a>
+        <a class="nav-link" href="teacher">校外申請</a>
+        <a class="nav-link" href="history">歷史記錄</a>
+        <a class="nav-link root-only" data-role="root" href="review">時數審核</a>
+        <a class="nav-link root-only" data-role="root" href="user_management">使用者管理</a>
       </nav>
       <div class="sidebar-footer">
         <button class="lang-btn" type="button">語言切換</button>
@@ -38,8 +38,8 @@
       <h1>教師成長活動時數認證（校內活動）</h1>
     </div>
     <div class="appbar-actions">
-      <a class="btn" href="history.html">History</a>
-      <a class="btn" href="teacher.html">校外活動申請</a>
+      <a class="btn" href="history">History</a>
+      <a class="btn" href="teacher">校外活動申請</a>
       <a class="btn" href="index.html#reward">前往 AI 審核系統</a>
     </div>
   </header>
@@ -198,11 +198,11 @@
 
         <!-- 醒目提醒 -->
         <article class="card" style="margin-top:16px;">
-          <div class="card-hd">上傳附件（PDF或 Excel）</div>
+          <div class="card-hd">上傳附件（PDF、Excel 或圖檔）</div>
           <div class="card-bd">
             <div class="field">
               <span class="lbl">上傳佐證資料（可多檔）</span>
-              <input id="filesIn" type="file" multiple accept=".pdf,.xls,.xlsx">
+              <input id="filesIn" type="file" multiple accept=".pdf,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp">
               <ul id="fileListIn" class="file-list"></ul>
               <p class="muted">僅支援 PDF 或 Excel 檔案。</p>
             </div>
@@ -256,3 +256,4 @@
   <script src="../src/js/teacher_in.js" defer></script>
 </body>
 </html>
+

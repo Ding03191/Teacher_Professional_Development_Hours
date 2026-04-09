@@ -1,4 +1,4 @@
-const API_BASE = window.API_BASE || "";
+﻿const API_BASE = window.API_BASE || "";
 
 const reviewList = document.getElementById("reviewList");
 const reviewMsg = document.getElementById("reviewMsg");
@@ -187,7 +187,7 @@ reviewList?.addEventListener("submit", async (e) => {
 window.__authUserPromise
   ?.then((user) => {
     if (user?.role !== "root") {
-      window.location.href = "history.html";
+      window.location.href = "history";
       return;
     }
     loadReviews().catch((err) => {
@@ -195,3 +195,4 @@ window.__authUserPromise
     });
   })
   .catch(() => {});
+

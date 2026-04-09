@@ -1,4 +1,4 @@
-const API_BASE = window.API_BASE || "";
+﻿const API_BASE = window.API_BASE || "";
 
 const formIn = document.getElementById("formInCampus");
 const previewIn = document.getElementById("previewIn");
@@ -53,6 +53,18 @@ function setMsg(type, text) {
   if (!msgIn) return;
   const color = type === "error" ? "#dc2626" : "#16a34a";
   msgIn.innerHTML = `<span style="color:${color}">${text}</span>`;
+}
+
+async function rollbackApplication(appId) {
+  if (!appId) return;
+  try {
+    await fetch(`${API_BASE}/api/applications/${appId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+  } catch (_) {
+    // Ignore rollback errors; the user-facing error is handled by submit flow.
+  }
 }
 
 function getCheckedValues(container) {
@@ -222,33 +234,35 @@ btnCheckIn?.addEventListener("click", () => {
     }),
   })
     .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
-    .then(({ ok, body }) => {
+    .then(async ({ ok, body }) => {
       if (!ok || body.ok === false) throw new Error(body.error || "submit_failed");
       const appId = body.data?.id;
       const files = Array.from(filesInputIn?.files || []);
       if (!appId || files.length === 0) {
-        setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
-        setTimeout(() => (window.location.href = "history.html"), 300);
-        return;
+        await rollbackApplication(appId);
+        throw new Error("\u9001\u51fa\u5931\u6557\uff1a\u7f3a\u5c11\u7533\u8acb\u7de8\u865f\u6216\u9644\u4ef6\u3002");
       }
       const fd = new FormData();
       files.forEach((file) => fd.append("files", file));
-      return fetch(`${API_BASE}/api/applications/${appId}/files`, {
-        method: "POST",
-        credentials: "include",
-        body: fd,
-      })
-        .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
-        .then(({ ok, body }) => {
-          if (!ok || body.ok === false) {
-            if (body.error === "only_pdf_or_xlsx_allowed") {
-              throw new Error("\u53ea\u652f\u63f4 PDF \u6216 Excel\uff08.xlsx\uff09\u6a94\u6848\u3002");
-            }
-            throw new Error(body.error || "upload_failed");
-          }
-          setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
-          setTimeout(() => (window.location.href = "history.html"), 300);
+      try {
+        const uploadRes = await fetch(`${API_BASE}/api/applications/${appId}/files`, {
+          method: "POST",
+          credentials: "include",
+          body: fd,
         });
+        const uploadBody = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok || uploadBody.ok === false) {
+          if (uploadBody.error === "only_pdf_or_xlsx_allowed" || uploadBody.error === "only_supported_file_types") {
+            throw new Error("\u53ea\u652f\u63f4 PDF\u3001Excel\uff08.xlsx\uff09\u6216\u5716\u6a94\uff08JPG/PNG/WebP/GIF/BMP\uff09\u3002");
+          }
+          throw new Error(uploadBody.error || "upload_failed");
+        }
+      } catch (error) {
+        await rollbackApplication(appId);
+        throw error;
+      }
+      setMsg("success", "\u9001\u51fa\u6210\u529f\uff0c\u5c07\u524d\u5f80\u6b77\u53f2\u7d00\u9304\u3002");
+      setTimeout(() => (window.location.href = "history"), 300);
     })
     .catch((err) => setMsg("error", err.message));
 });
@@ -277,3 +291,4 @@ document.addEventListener("DOMContentLoaded", () => {
   startTimeIn?.addEventListener("change", updateHoursIn);
   endTimeIn?.addEventListener("change", updateHoursIn);
 });
+

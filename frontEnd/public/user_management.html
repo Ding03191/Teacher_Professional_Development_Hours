@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../src/css/layout.css" />
+  <link rel="stylesheet" href="../src/css/user_management.css" />
+  <title>使用者管理</title>
+</head>
+<body>
+  <div class="layout">
+    <header class="layout-topbar">
+      <div class="layout-title">國立勤益科技大學教師成長時數平台</div>
+      <div class="topbar-actions">
+        <span class="topbar-user" aria-hidden="true">管</span>
+        <span id="topbarAccount" class="topbar-account"></span>
+        <a id="topbarLoginLink" class="topbar-link" href="admin">登入</a>
+        <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
+      </div>
+    </header>
+
+    <aside class="layout-sidebar">
+      <nav class="sidebar-nav">
+        <a class="nav-link" href="teacher_in">校內申請</a>
+        <a class="nav-link" href="teacher">校外申請</a>
+        <a class="nav-link" href="history">歷史記錄</a>
+        <a class="nav-link root-only" data-role="root" href="review">時數審核</a>
+        <a class="nav-link active root-only" data-role="root" href="user_management">使用者管理</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="lang-btn" type="button">語言切換</button>
+      </div>
+    </aside>
+
+    <div class="layout-main">
+      <main class="container">
+        <section class="section-hd">
+          <h2>使用者管理</h2>
+          <p id="adminHint" class="muted"></p>
+        </section>
+
+        <article class="card">
+          <div class="card-hd">新增使用者</div>
+          <form id="createForm" class="form grid g-2">
+            <label class="field">
+              <span class="lbl">姓名</span>
+              <input name="name" required />
+            </label>
+            <label class="field">
+              <span class="lbl">Email</span>
+              <input name="email" type="email" required />
+            </label>
+            <label class="field">
+              <span class="lbl">密碼</span>
+              <input name="password" type="password" required />
+            </label>
+            <label class="field">
+              <span class="lbl">角色</span>
+              <select name="role">
+                <option value="teacher">teacher</option>
+                <option value="staff">staff</option>
+                <option value="root">root</option>
+              </select>
+            </label>
+            <div class="actions span-2">
+              <button class="btn primary" type="submit">新增</button>
+              <span id="createMsg" class="msg"></span>
+            </div>
+          </form>
+        </article>
+
+        <article class="card">
+          <div class="card-hd">使用者列表</div>
+          <div class="table-wrap">
+            <table class="table" id="userTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>姓名</th>
+                  <th>Email</th>
+                  <th>角色</th>
+                  <th>建立時間</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="listMsg" class="msg"></div>
+        </article>
+      </main>
+
+    </div>
+  </div>
+
+  <script src="../src/js/auth_guard.js" defer></script>
+  <script src="../src/js/user_management.js" defer></script>
+</body>
+</html>
+

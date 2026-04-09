@@ -452,19 +452,32 @@ def _chat_with_lm_native_api(messages, max_tokens=400, temperature=0):
         if role == "system":
             system_prompt = (system_prompt + "\n" + content).strip() if system_prompt else content
         else:
-            # keep as message-type input objects
-            input_items.append({"type": "message", "content": content})
+            # LM Studio `/api/v1/chat` discriminator expects `text|image` for item type.
+            input_items.append(content)
 
-    payload = {
-        "model": MODEL_NAME,
-        "input": input_items,
-        "temperature": temperature,
-        "max_output_tokens": max_tokens,
-        "store": False,
-        "stream": False,
-    }
-    if system_prompt:
-        payload["system_prompt"] = system_prompt
+    def _base_payload():
+        payload = {
+            "model": MODEL_NAME,
+            "temperature": temperature,
+            "max_output_tokens": max_tokens,
+            "store": False,
+            "stream": False,
+        }
+        if system_prompt:
+            payload["system_prompt"] = system_prompt
+        return payload
+
+    def _as_input_items_content():
+        # Variant A: [{"type":"text","content":"..."}]
+        return [{"type": "text", "content": t} for t in input_items if isinstance(t, str) and t.strip()]
+
+    def _as_input_items_text():
+        # Variant B: [{"type":"text","text":"..."}]
+        return [{"type": "text", "text": t} for t in input_items if isinstance(t, str) and t.strip()]
+
+    def _as_plain_text():
+        # Variant C: plain string input (older LM Studio behavior)
+        return "\n\n".join([t for t in input_items if isinstance(t, str) and t.strip()]).strip()
 
     def _post_and_parse(req_payload):
         res = requests.post(chat_url, headers=headers, json=req_payload, timeout=60)
@@ -478,12 +491,27 @@ def _chat_with_lm_native_api(messages, max_tokens=400, temperature=0):
         return txt, ("" if txt else "lm_native_empty_payload")
 
     try:
-        return _post_and_parse(payload)
+        # Try modern structured variants first, then plain text fallback.
+        first = _base_payload()
+        first["input"] = _as_input_items_content()
+        if first["input"]:
+            txt, err = _post_and_parse(first)
+            if txt:
+                return txt, err
+
+        second = _base_payload()
+        second["input"] = _as_input_items_text()
+        if second["input"]:
+            txt, err = _post_and_parse(second)
+            if txt:
+                return txt, err
+
+        third = _base_payload()
+        third["input"] = _as_plain_text()
+        return _post_and_parse(third)
     except requests.HTTPError as e:
-        # fallback for older LM Studio builds: use plain text input format
-        input_text = "\n\n".join(
-            [item.get("content", "") for item in input_items if isinstance(item, dict)]
-        ).strip()
+        # fallback for older/newer LM Studio builds: use plain text input format
+        input_text = _as_plain_text()
         fallback_payload = {
             "model": MODEL_NAME,
             "input": input_text,

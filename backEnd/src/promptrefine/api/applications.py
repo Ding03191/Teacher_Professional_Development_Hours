@@ -18,6 +18,15 @@ applications_bp = Blueprint("applications", __name__, url_prefix="/api/applicati
 _BACKEND_DIR = Path(__file__).resolve().parents[3]
 UPLOAD_DIR = Path(os.environ.get("APP_UPLOAD_DIR", _BACKEND_DIR / "attachments" / "applications"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+ALLOWED_UPLOAD_EXTS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
+IMAGE_EXT_TO_MIME = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".bmp": "image/bmp",
+}
 
 
 def _ok(data=None, **kw):
@@ -58,6 +67,92 @@ def _wrap_text(text, max_len=32):
     return lines
 
 
+def _to_minutes(hhmm: str | None):
+    if not hhmm or ":" not in hhmm:
+        return None
+    try:
+        hh, mm = hhmm.split(":", 1)
+        h = int(hh)
+        m = int(mm)
+    except Exception:
+        return None
+    if h < 0 or h > 23 or m < 0 or m > 59:
+        return None
+    return h * 60 + m
+
+
+def _normalize_time_slots(raw_slots):
+    if not isinstance(raw_slots, list):
+        return []
+    out = []
+    for idx, raw in enumerate(raw_slots):
+        if not isinstance(raw, dict):
+            continue
+        slot_date = (raw.get("slot_date") or raw.get("slotDate") or "").strip()
+        start_time = (raw.get("start_time") or raw.get("startTime") or "").strip()
+        end_time = (raw.get("end_time") or raw.get("endTime") or "").strip()
+        s = _to_minutes(start_time)
+        e = _to_minutes(end_time)
+        if s is None or e is None or e <= s:
+            return None
+        out.append(
+            {
+                "slot_date": slot_date,
+                "start_time": start_time,
+                "end_time": end_time,
+                "minutes": e - s,
+                "sort_order": idx,
+            }
+        )
+    return out
+
+
+def _resolve_time_slots(app_type: str, data: dict, payload_slots):
+    slots = _normalize_time_slots(payload_slots)
+    if slots is None:
+        return None
+    if slots:
+        return slots
+
+    data_slots = _normalize_time_slots(data.get("timeSlots") or data.get("time_slots") or [])
+    if data_slots is None:
+        return None
+    if data_slots:
+        return data_slots
+
+    start_time = (data.get("startTime") or "").strip()
+    end_time = (data.get("endTime") or "").strip()
+    s = _to_minutes(start_time)
+    e = _to_minutes(end_time)
+    if s is not None and e is not None and e > s:
+        return [
+            {
+                "slot_date": (data.get("eventDateStart") or "").strip(),
+                "start_time": start_time,
+                "end_time": end_time,
+                "minutes": e - s,
+                "sort_order": 0,
+            }
+        ]
+    if app_type == "out":
+        return None
+    return []
+
+
+def _inject_time_slots_into_data(data: dict, time_slots: list):
+    data["timeSlots"] = [
+        {
+            "slotDate": slot.get("slot_date") or "",
+            "startTime": slot.get("start_time"),
+            "endTime": slot.get("end_time"),
+        }
+        for slot in time_slots
+    ]
+    if time_slots:
+        data["startTime"] = time_slots[0].get("start_time")
+        data["endTime"] = time_slots[0].get("end_time")
+
+
 def _build_form_pdf(record):
     try:
         pdfmetrics.registerFont(UnicodeCIDFont("MSung-Light"))
@@ -87,7 +182,16 @@ def _build_form_pdf(record):
             ("聯絡電話（校內分機）", data.get("ext")),
             ("活動地點", data.get("location")),
             ("活動日期", data.get("eventDate")),
-            ("活動時間", f"{data.get('startTime','')} ～ {data.get('endTime','')}"),
+            (
+                "活動時間",
+                "；".join(
+                    [
+                        f"{(slot.get('slot_date') or '').strip()} {slot.get('start_time','')}～{slot.get('end_time','')}".strip()
+                        for slot in (record.get("time_slots") or [])
+                    ]
+                )
+                or f"{data.get('startTime','')} ～ {data.get('endTime','')}",
+            ),
             ("是否核發研習證書", "是" if data.get("hasCert") == "yes" else "否"),
             ("證書字號", data.get("certNo")),
             ("鏈結領域", "、".join(data.get("domain") or [])),
@@ -106,7 +210,16 @@ def _build_form_pdf(record):
             ("教師編號", data.get("teacherId")),
             ("聯絡分機", data.get("ext")),
             ("活動日期", data.get("eventDate")),
-            ("活動時間", f"{data.get('startTime','')} ～ {data.get('endTime','')}"),
+            (
+                "活動時間",
+                "；".join(
+                    [
+                        f"{(slot.get('slot_date') or '').strip()} {slot.get('start_time','')}～{slot.get('end_time','')}".strip()
+                        for slot in (record.get("time_slots") or [])
+                    ]
+                )
+                or f"{data.get('startTime','')} ～ {data.get('endTime','')}",
+            ),
             ("活動課程名稱", data.get("courseTitle")),
             ("舉辦單位", data.get("organizer")),
             ("請具體舉證與專業成長之關係", data.get("relevance")),
@@ -153,11 +266,15 @@ def create_application():
         return _err("invalid_type")
     if not isinstance(data, dict):
         return _err("invalid_data")
+    time_slots = _resolve_time_slots(app_type, data, payload.get("time_slots"))
+    if time_slots is None:
+        return _err("invalid_time_slots")
+    _inject_time_slots_into_data(data, time_slots)
     unit_name = session.get("unit_name") or ""
     account = session.get("account") or ""
     if not unit_name or not account:
         return _err("not_logged_in", 401)
-    app_id = db.insert_application(app_type, unit_name, account, data, summary)
+    app_id = db.insert_application(app_type, unit_name, account, data, summary, time_slots=time_slots)
     return _ok({"id": app_id})
 
 
@@ -199,7 +316,11 @@ def update_application(app_id: int):
     summary = payload.get("summary")
     if not isinstance(data, dict):
         return _err("invalid_data")
-    db.update_application(app_id, data, summary or {})
+    time_slots = _resolve_time_slots(record.get("app_type") or "", data, payload.get("time_slots"))
+    if time_slots is None:
+        return _err("invalid_time_slots")
+    _inject_time_slots_into_data(data, time_slots)
+    db.update_application(app_id, data, summary or {}, time_slots=time_slots)
     return _ok({"id": app_id})
 
 
@@ -259,8 +380,8 @@ def upload_files(app_id: int):
         ext = Path(original_name).suffix.lower()
         if not ext:
             continue
-        if ext not in (".pdf", ".xlsx"):
-            return _err("only_pdf_or_xlsx_allowed")
+        if ext not in ALLOWED_UPLOAD_EXTS:
+            return _err("only_supported_file_types")
         safe_name = secure_filename(original_name)
         if not safe_name:
             safe_name = f"file{idx + 1}{ext}"
@@ -325,10 +446,16 @@ def download_file(app_id: int, file_index: int):
         return _err("file_not_found", 404)
     filename = info.get("name") or "attachment.pdf"
     inline = (request.args.get("inline") or "").lower() in ("1", "true", "yes")
-    is_pdf = filename.lower().endswith(".pdf")
+    ext = Path(filename).suffix.lower()
+    is_pdf = ext == ".pdf"
+    image_mime = IMAGE_EXT_TO_MIME.get(ext)
     return send_file(
         path,
-        as_attachment=not (inline and is_pdf),
+        as_attachment=not (inline and (is_pdf or image_mime is not None)),
         download_name=filename,
-        mimetype="application/pdf" if (inline and is_pdf) else None,
+        mimetype=(
+            "application/pdf"
+            if (inline and is_pdf)
+            else image_mime if (inline and image_mime is not None) else None
+        ),
     )

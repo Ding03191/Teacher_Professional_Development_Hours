@@ -17,6 +17,7 @@ TABLE_NAME = 'history'
 LABEL_TABLE_NAME = "history_labels"
 DEPT_TABLE_NAME = "departments"
 APP_TABLE_NAME = "applications"
+APP_TIME_SLOT_TABLE_NAME = "application_time_slots"
 
 
 def _ensure_db_path():
@@ -34,6 +35,120 @@ def _connect():
     except Exception:
         pass
     return conn
+
+
+def _to_minutes(hhmm: str | None):
+    if not hhmm or ":" not in hhmm:
+        return None
+    try:
+        hh, mm = hhmm.split(":", 1)
+        h = int(hh)
+        m = int(mm)
+    except Exception:
+        return None
+    if h < 0 or h > 23 or m < 0 or m > 59:
+        return None
+    return h * 60 + m
+
+
+def _normalize_time_slots(raw_slots: list | None, fallback_data: dict | None = None):
+    slots = []
+    if isinstance(raw_slots, list):
+        for idx, raw in enumerate(raw_slots):
+            if not isinstance(raw, dict):
+                continue
+            start_time = (raw.get("start_time") or raw.get("startTime") or "").strip()
+            end_time = (raw.get("end_time") or raw.get("endTime") or "").strip()
+            slot_date = (raw.get("slot_date") or raw.get("slotDate") or "").strip()
+            start_m = _to_minutes(start_time)
+            end_m = _to_minutes(end_time)
+            if start_m is None or end_m is None or end_m <= start_m:
+                continue
+            slots.append(
+                {
+                    "slot_date": slot_date,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "minutes": end_m - start_m,
+                    "sort_order": idx,
+                }
+            )
+
+    if slots:
+        return slots
+
+    data = fallback_data or {}
+    start_time = (data.get("startTime") or "").strip()
+    end_time = (data.get("endTime") or "").strip()
+    start_m = _to_minutes(start_time)
+    end_m = _to_minutes(end_time)
+    if start_m is None or end_m is None or end_m <= start_m:
+        return []
+    return [
+        {
+            "slot_date": (data.get("eventDateStart") or "").strip(),
+            "start_time": start_time,
+            "end_time": end_time,
+            "minutes": end_m - start_m,
+            "sort_order": 0,
+        }
+    ]
+
+
+def _replace_application_time_slots(cursor, app_id: int, time_slots: list):
+    cursor.execute(
+        f"DELETE FROM {APP_TIME_SLOT_TABLE_NAME} WHERE application_id = ?",
+        (app_id,),
+    )
+    if not time_slots:
+        return
+    cursor.executemany(
+        f"""
+        INSERT INTO {APP_TIME_SLOT_TABLE_NAME}
+            (application_id, slot_date, start_time, end_time, minutes, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                app_id,
+                slot.get("slot_date", ""),
+                slot.get("start_time"),
+                slot.get("end_time"),
+                slot.get("minutes"),
+                slot.get("sort_order", idx),
+            )
+            for idx, slot in enumerate(time_slots)
+        ],
+    )
+
+
+def _fetch_time_slots_map(cursor, app_ids: list[int]):
+    if not app_ids:
+        return {}
+    placeholders = ",".join("?" for _ in app_ids)
+    cursor.execute(
+        f"""
+        SELECT id, application_id, slot_date, start_time, end_time, minutes, sort_order
+        FROM {APP_TIME_SLOT_TABLE_NAME}
+        WHERE application_id IN ({placeholders})
+        ORDER BY application_id, sort_order ASC, id ASC
+        """,
+        app_ids,
+    )
+    out = {}
+    for row in cursor.fetchall():
+        app_id = row["application_id"]
+        out.setdefault(app_id, []).append(
+            {
+                "id": row["id"],
+                "slot_date": row["slot_date"] or "",
+                "start_time": row["start_time"],
+                "end_time": row["end_time"],
+                "minutes": row["minutes"],
+                "sort_order": row["sort_order"] or 0,
+            }
+        )
+    return out
 
 
 # 1. Create the table if it doesn't exist
@@ -101,6 +216,21 @@ def init_db():
             created_at DATETIME DEFAULT (datetime('now','localtime'))
         )
     ''')
+    c.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {APP_TIME_SLOT_TABLE_NAME} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            application_id INTEGER NOT NULL,
+            slot_date TEXT,
+            start_time TEXT NOT NULL,
+            end_time TEXT NOT NULL,
+            minutes INTEGER NOT NULL,
+            sort_order INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (application_id) REFERENCES {APP_TABLE_NAME}(id) ON DELETE CASCADE
+        )
+        """
+    )
     conn.commit()
 
     # Backward-compatible schema migration: add columns if old DB already exists.
@@ -119,11 +249,38 @@ def init_db():
         if col not in app_cols:
             c.execute(f"ALTER TABLE {APP_TABLE_NAME} ADD COLUMN {col} {col_type}")
 
+    # Backfill existing out-applications into timeslot details if missing.
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        f"SELECT id, app_type, data_json FROM {APP_TABLE_NAME}"
+    ).fetchall()
+    for row in rows:
+        app_id = row["id"]
+        exists = conn.execute(
+            f"SELECT 1 FROM {APP_TIME_SLOT_TABLE_NAME} WHERE application_id = ? LIMIT 1",
+            (app_id,),
+        ).fetchone()
+        if exists:
+            continue
+        data = json.loads(row["data_json"] or "{}")
+        raw_slots = data.get("timeSlots") or data.get("time_slots") or []
+        slots = _normalize_time_slots(raw_slots, data)
+        if not slots:
+            continue
+        _replace_application_time_slots(conn.cursor(), app_id, slots)
+
     conn.commit()
     conn.close()
 
 
-def insert_application(app_type: str, unit_name: str, account: str, data: dict, summary: dict | None = None):
+def insert_application(
+    app_type: str,
+    unit_name: str,
+    account: str,
+    data: dict,
+    summary: dict | None = None,
+    time_slots: list | None = None,
+):
     summary = summary or {}
     conn = _connect()
     c = conn.cursor()
@@ -143,8 +300,10 @@ def insert_application(app_type: str, unit_name: str, account: str, data: dict, 
             json.dumps(data, ensure_ascii=False),
         ),
     )
-    conn.commit()
     app_id = c.lastrowid
+    normalized_slots = _normalize_time_slots(time_slots, data)
+    _replace_application_time_slots(c, app_id, normalized_slots)
+    conn.commit()
     conn.close()
     return app_id
 
@@ -173,9 +332,23 @@ def list_applications(app_type: str | None = None, unit_name: str | None = None,
         params,
     )
     rows = c.fetchall()
-    conn.close()
+    app_ids = [row["id"] for row in rows]
+    slots_map = _fetch_time_slots_map(c, app_ids)
     records = []
     for row in rows:
+        slots = slots_map.get(row["id"], [])
+        data = json.loads(row["data_json"] or "{}")
+        data["timeSlots"] = [
+            {
+                "slotDate": slot.get("slot_date") or "",
+                "startTime": slot.get("start_time"),
+                "endTime": slot.get("end_time"),
+            }
+            for slot in slots
+        ]
+        if slots and (not data.get("startTime") or not data.get("endTime")):
+            data["startTime"] = slots[0].get("start_time")
+            data["endTime"] = slots[0].get("end_time")
         records.append(
             {
                 "id": row["id"],
@@ -185,7 +358,8 @@ def list_applications(app_type: str | None = None, unit_name: str | None = None,
                 "event_name": row["event_name"],
                 "event_date": row["event_date"],
                 "organizer": row["organizer"],
-                "data": json.loads(row["data_json"] or "{}"),
+                "data": data,
+                "time_slots": slots,
                 "status": (row["status"] or "pending"),
                 "approved_hours": row["approved_hours"],
                 "review_comment": row["review_comment"],
@@ -194,6 +368,7 @@ def list_applications(app_type: str | None = None, unit_name: str | None = None,
                 "created_at": row["created_at"],
             }
         )
+    conn.close()
     return records
 
 
@@ -211,9 +386,23 @@ def get_application(app_id: int):
         (app_id,),
     )
     row = c.fetchone()
-    conn.close()
     if not row:
+        conn.close()
         return None
+    slots = _fetch_time_slots_map(c, [app_id]).get(app_id, [])
+    data = json.loads(row["data_json"] or "{}")
+    data["timeSlots"] = [
+        {
+            "slotDate": slot.get("slot_date") or "",
+            "startTime": slot.get("start_time"),
+            "endTime": slot.get("end_time"),
+        }
+        for slot in slots
+    ]
+    if slots and (not data.get("startTime") or not data.get("endTime")):
+        data["startTime"] = slots[0].get("start_time")
+        data["endTime"] = slots[0].get("end_time")
+    conn.close()
     return {
         "id": row["id"],
         "app_type": row["app_type"],
@@ -222,7 +411,8 @@ def get_application(app_id: int):
         "event_name": row["event_name"],
         "event_date": row["event_date"],
         "organizer": row["organizer"],
-        "data": json.loads(row["data_json"] or "{}"),
+        "data": data,
+        "time_slots": slots,
         "status": (row["status"] or "pending"),
         "approved_hours": row["approved_hours"],
         "review_comment": row["review_comment"],
@@ -232,7 +422,12 @@ def get_application(app_id: int):
     }
 
 
-def update_application(app_id: int, data: dict, summary: dict | None = None):
+def update_application(
+    app_id: int,
+    data: dict,
+    summary: dict | None = None,
+    time_slots: list | None = None,
+):
     summary = summary or {}
     record = get_application(app_id)
     if record:
@@ -257,6 +452,9 @@ def update_application(app_id: int, data: dict, summary: dict | None = None):
             app_id,
         ),
     )
+    if time_slots is not None:
+        normalized_slots = _normalize_time_slots(time_slots, data)
+        _replace_application_time_slots(c, app_id, normalized_slots)
     conn.commit()
     conn.close()
 

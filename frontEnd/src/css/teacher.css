@@ -145,6 +145,33 @@ textarea{
   min-width:0;
 }
 
+.time-slots{
+  display:grid;
+  gap:8px;
+}
+
+.time-slot-row{
+  display:grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap:8px;
+  align-items:center;
+}
+
+.time-slot-sep{
+  color:var(--muted);
+}
+
+.btn.slot-remove{
+  padding:8px 10px;
+  border-radius:10px;
+}
+
+@media (max-width:840px){
+  .time-slot-row{
+    grid-template-columns: 1fr;
+  }
+}
+
 .choice{
   display:inline-flex;
   align-items:center;

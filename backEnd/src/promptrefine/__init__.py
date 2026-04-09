@@ -31,13 +31,26 @@ def create_app():
     if app.config.get("OPENAI_BASE_URL"):
         openai.base_url = app.config["OPENAI_BASE_URL"]
 
-    db.init_db()
-    db.init_users_table()
-    db.init_departments_from_csv()
-    db.ensure_root_department("系統管理員", "root", "root")
-    root_email = app.config.get("ROOT_EMAIL", "root")
-    root_password = app.config.get("ROOT_PASSWORD", "root1234")
-    db.ensure_root_user(root_email, root_password, name="root")
+    if app.config.get("DB_INIT_ON_START", True):
+        db.init_db()
+        db.init_users_table()
+
+        if app.config.get("DB_INIT_DEPARTMENTS_FROM_CSV", True):
+            db.init_departments_from_csv(app.config.get("DB_DEPARTMENTS_CSV_PATH"))
+
+        if app.config.get("DB_INIT_ROOT_DEPARTMENT", True):
+            db.ensure_root_department(
+                app.config.get("ROOT_DEPARTMENT_NAME", "系統管理員"),
+                app.config.get("ROOT_DEPARTMENT_ACCOUNT", "root"),
+                app.config.get("ROOT_DEPARTMENT_PASSWORD", "root1234"),
+            )
+
+        if app.config.get("DB_INIT_ROOT_USER", True):
+            db.ensure_root_user(
+                app.config.get("ROOT_EMAIL", "root"),
+                app.config.get("ROOT_PASSWORD", "root1234"),
+                name=app.config.get("ROOT_NAME", "root"),
+            )
 
     app.register_blueprint(core_bp)
     app.register_blueprint(analyze_bp)

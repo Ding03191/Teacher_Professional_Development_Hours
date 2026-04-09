@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request, session
+from werkzeug.security import generate_password_hash
 
 from ..db import dbStoring as db
 from ..services.auth_service import create_user, get_user_by_email
@@ -91,3 +92,39 @@ def api_delete_user(user_id: int):
 
     db.delete_user(user_id)
     return _ok({"id": user_id, "deleted": True})
+
+
+@admin_bp.get("/departments")
+@require_role("root")
+def api_list_departments():
+    return _ok(db.list_departments_admin())
+
+
+@admin_bp.patch("/departments/<int:dept_id>")
+@require_role("root")
+def api_update_department(dept_id: int):
+    payload = request.get_json(silent=True) or {}
+    unit_name = (payload.get("unit_name") or "").strip()
+    account = (payload.get("account") or "").strip().lower()
+    password = (payload.get("password") or "").strip()
+
+    if not unit_name or not account:
+        return _err("missing_required_fields")
+
+    target = db.get_department_by_id(dept_id)
+    if not target:
+        return _err("department_not_found", 404)
+
+    pwd_hash = generate_password_hash(password) if password else None
+
+    try:
+        db.update_department_admin(
+            dept_id=dept_id,
+            unit_name=unit_name,
+            account=account,
+            password_hash=pwd_hash,
+        )
+    except Exception as exc:
+        return _err(f"update_failed: {exc}", 500)
+
+    return _ok({"id": dept_id, "unit_name": unit_name, "account": account, "password_updated": bool(password)})

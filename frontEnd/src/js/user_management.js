@@ -5,6 +5,8 @@ const createForm = document.getElementById("createForm");
 const createMsg = document.getElementById("createMsg");
 const userTableBody = document.querySelector("#userTable tbody");
 const listMsg = document.getElementById("listMsg");
+const deptTableBody = document.querySelector("#deptTable tbody");
+const deptMsg = document.getElementById("deptMsg");
 
 async function api(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -65,6 +67,30 @@ async function loadUsers() {
   });
 }
 
+async function loadDepartments() {
+  if (!deptTableBody) return;
+  deptMsg.textContent = "";
+  const data = await api("/api/admin/departments");
+  const departments = data.data || [];
+  deptTableBody.innerHTML = "";
+
+  departments.forEach((d) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.id}</td>
+      <td>${d.unit_no ?? ""}</td>
+      <td><input type="text" data-field="unit_name" value="${d.unit_name || ""}"></td>
+      <td><input type="text" data-field="account" value="${d.account || ""}"></td>
+      <td><input type="password" data-field="password" placeholder="不修改請留空"></td>
+      <td>${d.created_at || ""}</td>
+      <td class="row-actions">
+        <button class="btn ghost" data-action="save-dept" data-id="${d.id}" type="button">更新</button>
+      </td>
+    `;
+    deptTableBody.appendChild(tr);
+  });
+}
+
 createForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   createMsg.textContent = "";
@@ -121,11 +147,40 @@ userTableBody?.addEventListener("click", async (e) => {
   }
 });
 
+deptTableBody?.addEventListener("click", async (e) => {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.dataset.action !== "save-dept") return;
+
+  const deptId = target.dataset.id;
+  const row = target.closest("tr");
+  if (!deptId || !row) return;
+
+  const unitName = row.querySelector('input[data-field="unit_name"]')?.value?.trim() || "";
+  const account = row.querySelector('input[data-field="account"]')?.value?.trim() || "";
+  const password = row.querySelector('input[data-field="password"]')?.value || "";
+
+  try {
+    await api(`/api/admin/departments/${deptId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        unit_name: unitName,
+        account,
+        password,
+      }),
+    });
+    await loadDepartments();
+  } catch (err) {
+    deptMsg.textContent = err.message;
+  }
+});
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const user = await ensureRoot();
     if (!user) return;
     await loadUsers();
+    await loadDepartments();
   } catch (err) {
     window.location.href = "admin";
   }

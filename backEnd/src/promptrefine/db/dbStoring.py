@@ -811,6 +811,71 @@ def list_departments():
     ]
 
 
+def list_departments_admin():
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"""
+        SELECT id, unit_no, unit_name, account, created_at
+        FROM {DEPT_TABLE_NAME}
+        ORDER BY unit_no ASC, id ASC
+        """
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [
+        {
+            "id": r[0],
+            "unit_no": r[1],
+            "unit_name": r[2],
+            "account": r[3],
+            "created_at": r[4],
+        }
+        for r in rows
+    ]
+
+
+def get_department_by_id(dept_id: int):
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"""
+        SELECT id, unit_no, unit_name, account, password_hash, created_at
+        FROM {DEPT_TABLE_NAME}
+        WHERE id = ?
+        """,
+        (dept_id,),
+    )
+    row = c.fetchone()
+    conn.close()
+    return row
+
+
+def update_department_admin(dept_id: int, unit_name: str, account: str, password_hash: str | None = None):
+    conn = _connect()
+    c = conn.cursor()
+    if password_hash:
+        c.execute(
+            f"""
+            UPDATE {DEPT_TABLE_NAME}
+            SET unit_name=?, account=?, password_hash=?
+            WHERE id=?
+            """,
+            (unit_name.strip(), account.strip().lower(), password_hash, dept_id),
+        )
+    else:
+        c.execute(
+            f"""
+            UPDATE {DEPT_TABLE_NAME}
+            SET unit_name=?, account=?
+            WHERE id=?
+            """,
+            (unit_name.strip(), account.strip().lower(), dept_id),
+        )
+    conn.commit()
+    conn.close()
+
+
 def get_department_by_unit_name(unit_name: str):
     conn = _connect()
     c = conn.cursor()

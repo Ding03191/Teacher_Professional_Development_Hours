@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash
 
 from ..db import dbStoring as db
+from ..utils.authz import require_role
 
 
 departments_bp = Blueprint("departments", __name__, url_prefix="/api/departments")
@@ -22,6 +23,7 @@ def _err(msg, code=400):
 
 
 @departments_bp.post("/bulk_create")
+@require_role("root")
 def api_departments_bulk_create():
     """
     建立/更新單位帳號（批次）
@@ -60,5 +62,6 @@ def api_departments_bulk_create():
 
 
 @departments_bp.get("/list")
+@require_role("root")
 def api_departments_list():
     return _ok(db.list_departments())

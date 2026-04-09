@@ -125,6 +125,13 @@ select {
   white-space: nowrap;
 }
 
+.table td input,
+.table td select {
+  width: 100%;
+  min-width: 140px;
+  padding: 6px 8px;
+}
+
 .row-actions {
   display: flex;
   gap: 8px;

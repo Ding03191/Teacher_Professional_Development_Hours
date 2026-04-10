@@ -20,7 +20,7 @@ class Config:
     DEPT_DEFAULT_PASSWORD = os.environ.get("DEPT_DEFAULT_PASSWORD", "12345678")
 
     # DB bootstrap settings
-    DB_INIT_ON_START = _as_bool(os.environ.get("DB_INIT_ON_START"), False)
+    DB_INIT_ON_START = _as_bool(os.environ.get("DB_INIT_ON_START"), True)
     DB_INIT_DEPARTMENTS_FROM_CSV = _as_bool(
         os.environ.get("DB_INIT_DEPARTMENTS_FROM_CSV"), True
     )

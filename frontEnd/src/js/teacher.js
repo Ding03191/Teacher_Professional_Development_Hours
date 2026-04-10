@@ -148,21 +148,12 @@ function collectTeacherForm() {
 function validateTimeSlots(slots) {
   if (!Array.isArray(slots) || slots.length === 0) return "請至少新增 1 個活動時段。";
 
-  const parsed = [];
   for (let i = 0; i < slots.length; i += 1) {
     const slot = slots[i] || {};
     const s = timeToMinutes(slot.startTime);
     const e = timeToMinutes(slot.endTime);
     if (s === null || e === null) return `第 ${i + 1} 個時段請填寫完整開始與結束時間。`;
     if (e <= s) return `第 ${i + 1} 個時段結束時間需晚於開始時間。`;
-    parsed.push({ s, e, idx: i + 1 });
-  }
-
-  parsed.sort((a, b) => a.s - b.s);
-  for (let i = 1; i < parsed.length; i += 1) {
-    if (parsed[i].s < parsed[i - 1].e) {
-      return `第 ${parsed[i - 1].idx} 與第 ${parsed[i].idx} 個時段有重疊。`;
-    }
   }
 
   return "";

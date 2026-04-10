@@ -20,11 +20,6 @@ const FIELD_DEFS = {
     { key: "domainOther", label: "其他鏈結領域", type: "text" },
     { key: "sdg", label: "SDGs 指標", type: "array" },
     { key: "teachingRelation", label: "活動與教學專業發展之關係", type: "textarea" },
-    { key: "applicant", label: "申請人", type: "text" },
-    { key: "deptHead", label: "系所主管", type: "text" },
-    { key: "staff", label: "承辦人員", type: "text" },
-    { key: "lead", label: "主任/院長", type: "text" },
-    { key: "note", label: "其他備註", type: "textarea" },
   ],
   out: [
     { key: "teacherName", label: "教師姓名", type: "text" },

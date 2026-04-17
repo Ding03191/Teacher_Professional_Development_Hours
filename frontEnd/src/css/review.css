@@ -170,6 +170,11 @@ body {
   color: #166534;
 }
 
+.status-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .review-detail {
   padding: 14px 16px 18px;
   border-top: 1px solid var(--line);

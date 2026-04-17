@@ -11,11 +11,16 @@ function fmtType(type) {
 
 function normalizeStatus(status) {
   const v = (status || "pending").toString().toLowerCase();
-  return v === "approved" ? "approved" : "pending";
+  if (v === "approved") return "approved";
+  if (v === "rejected") return "rejected";
+  return "pending";
 }
 
 function fmtStatus(status) {
-  return normalizeStatus(status) === "approved" ? "通過" : "待審核";
+  const s = normalizeStatus(status);
+  if (s === "approved") return "通過";
+  if (s === "rejected") return "退件";
+  return "待審核";
 }
 
 function getActiveStatus() {
@@ -98,6 +103,7 @@ function renderItem(record) {
               <select name="status">
                 <option value="pending" ${status === "pending" ? "selected" : ""}>待審核</option>
                 <option value="approved" ${status === "approved" ? "selected" : ""}>通過</option>
+                <option value="rejected" ${status === "rejected" ? "selected" : ""}>退件</option>
               </select>
             </label>
             <label class="field inline">

@@ -17,6 +17,7 @@ from ..utils.authz import require_role
 applications_bp = Blueprint("applications", __name__, url_prefix="/api/applications")
 _BACKEND_DIR = Path(__file__).resolve().parents[3]
 UPLOAD_DIR = Path(os.environ.get("APP_UPLOAD_DIR", _BACKEND_DIR / "attachments" / "applications"))
+EXCEL_TEMPLATE_PATH = _BACKEND_DIR / "ex.csv"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_UPLOAD_EXTS = {".pdf", ".xlsx", ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
 IMAGE_EXT_TO_MIME = {
@@ -292,6 +293,18 @@ def list_applications():
     return _ok(records)
 
 
+@applications_bp.get("/templates/excel")
+def download_excel_template():
+    if not EXCEL_TEMPLATE_PATH.exists():
+        return _err("template_not_found", 404)
+    return send_file(
+        EXCEL_TEMPLATE_PATH,
+        as_attachment=True,
+        download_name="ex.csv",
+        mimetype="text/csv; charset=utf-8",
+    )
+
+
 @applications_bp.get("/<int:app_id>")
 @require_role("dept")
 def get_application(app_id: int):
@@ -331,8 +344,18 @@ def review_application(app_id: int):
     if not record:
         return _err("not_found", 404)
     payload = request.get_json(silent=True) or {}
-    status = (payload.get("status") or "pending").strip().lower()
-    if status not in ("pending", "approved"):
+    raw_status = str(payload.get("status") or "pending").strip().lower()
+    status_alias = {
+        "pending": "pending",
+        "approved": "approved",
+        "rejected": "rejected",
+        "待審核": "pending",
+        "通过": "approved",
+        "通過": "approved",
+        "退件": "rejected",
+    }
+    status = status_alias.get(raw_status, raw_status)
+    if status not in ("pending", "approved", "rejected"):
         return _err("invalid_status")
     approved_hours = payload.get("approved_hours", None)
     if approved_hours == "":

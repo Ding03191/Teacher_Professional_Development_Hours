@@ -1,4 +1,4 @@
-const API_BASE = window.API_BASE || "";
+﻿const API_BASE = window.API_BASE || "";
 
 const historyList = document.getElementById("historyList");
 const historyMsg = document.getElementById("historyMsg");
@@ -11,11 +11,16 @@ function fmtType(type) {
 
 function normalizeStatus(status) {
   const v = (status || "pending").toString().toLowerCase();
-  return v === "approved" ? "approved" : "pending";
+  if (v === "approved") return "approved";
+  if (v === "rejected") return "rejected";
+  return "pending";
 }
 
 function fmtStatus(status) {
-  return normalizeStatus(status) === "approved" ? "已通過" : "待審核";
+  const s = normalizeStatus(status);
+  if (s === "approved") return "通過";
+  if (s === "rejected") return "退件";
+  return "待審核";
 }
 
 async function api(path, options = {}) {
@@ -48,7 +53,7 @@ function renderList(records) {
   if (!historyList) return;
   historyList.innerHTML = "";
   if (!records.length) {
-    historyList.innerHTML = `<div class="muted">目前沒有紀錄。</div>`;
+    historyList.innerHTML = `<div class="muted">目前沒有歷史申請紀錄。</div>`;
     return;
   }
 
@@ -88,3 +93,4 @@ document.addEventListener("DOMContentLoaded", () => {
   initActiveTypeFromQuery();
   loadApplications(getActiveType());
 });
+

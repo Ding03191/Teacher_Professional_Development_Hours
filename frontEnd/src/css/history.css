@@ -248,6 +248,11 @@ input {
   color: #166534;
 }
 
+.status-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .history-summary:hover {
   background: #f8fafc;
 }

@@ -1,0 +1,19 @@
+{
+  "name": "teacher-professional-development-hours",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local development scripts for backend and frontend",
+  "scripts": {
+    "dev": "concurrently -k -n BACKEND,FRONTEND -c green,cyan \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "start": "npm run dev",
+    "setup:backend": "python -m pip install -r backEnd/requirements.txt",
+    "dev:backend": "dotenv -e .env -- python backEnd/app.py",
+    "dev:frontend": "node scripts/dev-frontend-server.js"
+  },
+  "dependencies": {
+    "concurrently": "^9.1.2",
+    "dotenv-cli": "^8.0.0",
+    "express": "^4.21.2",
+    "http-proxy-middleware": "^3.0.3"
+  }
+}

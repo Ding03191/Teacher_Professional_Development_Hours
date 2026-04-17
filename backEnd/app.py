@@ -3,14 +3,14 @@ import sys
 
 from flask import jsonify, request
 
-from promptrefine import create_app
-from promptrefine.db import dbStoring as db
-
 
 BACKEND_DIR = os.path.abspath(os.path.dirname(__file__))
 SRC_DIR = os.path.join(BACKEND_DIR, "src")
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
+
+from promptrefine import create_app
+from promptrefine.db import dbStoring as db
 
 
 app = create_app()

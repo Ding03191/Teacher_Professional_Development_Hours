@@ -21,15 +21,15 @@ function timeToMinutes(value) {
 
 function calcRoundedHoursFromSlots(slots) {
   const totalMinutes = slots.reduce((sum, slot) => {
-    const s = timeToMinutes(slot.startTime);
-    const e = timeToMinutes(slot.endTime);
-    if (s === null || e === null || e <= s) return sum;
-    return sum + (e - s);
+    const start = parseSlotDateTime(slot.startDate, slot.startTime);
+    const end = parseSlotDateTime(slot.endDate, slot.endTime);
+    if (!start || !end || end <= start) return sum;
+    return sum + Math.round((end.getTime() - start.getTime()) / 60000);
   }, 0);
+
   if (totalMinutes <= 0) return "";
   const rounded = Math.round(totalMinutes / 60);
-  const clamped = Math.min(4, Math.max(1, rounded));
-  return clamped.toString();
+  return String(Math.min(4, Math.max(1, rounded)));
 }
 
 function setMsg(type, text) {
@@ -52,18 +52,31 @@ async function rollbackApplication(appId) {
       credentials: "include",
     });
   } catch (_) {
-    // Ignore rollback errors; the user-facing error is handled by submit flow.
+    // noop
   }
+}
+
+function getDefaultSlotDate() {
+  return "";
+}
+
+function parseSlotDateTime(dateValue, timeValue) {
+  if (!dateValue || !timeValue) return null;
+  const d = new Date(`${dateValue}T${timeValue}:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
 }
 
 function createTimeSlotRow(slot = {}) {
   const row = document.createElement("div");
   row.className = "time-slot-row";
   row.innerHTML = `
+    <input type="date" class="slot-date-start" value="${slot.startDate || slot.slotDate || getDefaultSlotDate()}" required>
+    <input type="date" class="slot-date-end" value="${slot.endDate || slot.slotEndDate || slot.slotDate || getDefaultSlotDate()}" required>
     <input type="time" class="slot-start" value="${slot.startTime || ""}" required>
     <span class="time-slot-sep">～</span>
     <input type="time" class="slot-end" value="${slot.endTime || ""}" required>
-    <button type="button" class="btn ghost slot-remove">刪除</button>
+    <button type="button" class="btn ghost slot-remove" aria-label="移除時段">×</button>
   `;
   return row;
 }
@@ -88,11 +101,12 @@ function refreshTimeSlotRemoveState() {
 
 function getTimeSlotsOut() {
   if (!timeSlotsOut) return [];
-  return Array.from(timeSlotsOut.querySelectorAll(".time-slot-row")).map((row) => {
-    const startTime = row.querySelector(".slot-start")?.value?.trim() || "";
-    const endTime = row.querySelector(".slot-end")?.value?.trim() || "";
-    return { startTime, endTime };
-  });
+  return Array.from(timeSlotsOut.querySelectorAll(".time-slot-row")).map((row) => ({
+    startDate: row.querySelector(".slot-date-start")?.value?.trim() || "",
+    endDate: row.querySelector(".slot-date-end")?.value?.trim() || "",
+    startTime: row.querySelector(".slot-start")?.value?.trim() || "",
+    endTime: row.querySelector(".slot-end")?.value?.trim() || "",
+  }));
 }
 
 function ensureHoursFieldOut() {
@@ -102,7 +116,7 @@ function ensureHoursFieldOut() {
   const wrapper = document.createElement("label");
   wrapper.className = "field";
   wrapper.innerHTML = `
-    <span class="lbl">活動時數（自動計算，最多4小時）</span>
+    <span class="lbl">活動時數（自動計算，最多 4 小時）</span>
     <input name="hours" id="hoursOut" type="text" readonly placeholder="1~4 小時">
   `;
   timeField.parentElement.insertBefore(wrapper, timeField.nextSibling);
@@ -111,73 +125,74 @@ function ensureHoursFieldOut() {
 
 function updateHoursOut() {
   if (!hoursInputOut) return;
-  const hours = calcRoundedHoursFromSlots(getTimeSlotsOut());
-  hoursInputOut.value = hours;
+  hoursInputOut.value = calcRoundedHoursFromSlots(getTimeSlotsOut());
 }
 
 function collectTeacherForm() {
   const fd = new FormData(formT);
   const timeSlots = getTimeSlotsOut();
-  const hours = calcRoundedHoursFromSlots(timeSlots);
   const firstSlot = timeSlots[0] || { startTime: "", endTime: "" };
+  const startDates = timeSlots
+    .map((slot) => slot.startDate)
+    .filter(Boolean)
+    .sort();
+  const endDates = timeSlots
+    .map((slot) => slot.endDate)
+    .filter(Boolean)
+    .sort();
+  const eventDateStart = startDates[0] || endDates[0] || "";
+  const eventDateEnd = endDates[endDates.length - 1] || eventDateStart;
   return {
     teacherName: fd.get("teacherName")?.toString().trim(),
     department: fd.get("department")?.toString().trim(),
     teacherId: fd.get("teacherId")?.toString().trim(),
     ext: fd.get("ext")?.toString().trim() || "",
-    eventDateStart: fd.get("eventDateStart"),
-    eventDateEnd: fd.get("eventDateEnd"),
+    eventDateStart,
+    eventDateEnd,
     startTime: firstSlot.startTime,
     endTime: firstSlot.endTime,
     timeSlots,
-    hours,
+    hours: calcRoundedHoursFromSlots(timeSlots),
     courseTitle: fd.get("courseTitle")?.toString().trim(),
     organizer: fd.get("organizer")?.toString().trim(),
     relevance: fd.get("relevance")?.toString().trim(),
     evidenceLink: fd.get("evidenceLink")?.toString().trim(),
     hasCert: fd.get("hasCert"),
-    certNo:
-      fd.get("hasCert") === "yes"
-        ? fd.get("certNo")?.toString().trim() || ""
-        : "",
+    certNo: fd.get("hasCert") === "yes" ? fd.get("certNo")?.toString().trim() || "" : "",
     attachments: Array.from(filesInput?.files || []).map((f) => f.name),
     attachmentCount: filesInput?.files?.length || 0,
   };
 }
 
-function validateTimeSlots(slots) {
-  if (!Array.isArray(slots) || slots.length === 0) return "請至少新增 1 個活動時段。";
+function validateTimeSlots(slots, eventDateStart, eventDateEnd) {
+  if (!Array.isArray(slots) || slots.length === 0) return "請至少新增 1 個時段。";
 
   for (let i = 0; i < slots.length; i += 1) {
     const slot = slots[i] || {};
-    const s = timeToMinutes(slot.startTime);
-    const e = timeToMinutes(slot.endTime);
-    if (s === null || e === null) return `第 ${i + 1} 個時段請填寫完整開始與結束時間。`;
-    if (e <= s) return `第 ${i + 1} 個時段結束時間需晚於開始時間。`;
+    const start = parseSlotDateTime(slot.startDate, slot.startTime);
+    const end = parseSlotDateTime(slot.endDate, slot.endTime);
+    if (!slot.startDate || !slot.endDate) return `第 ${i + 1} 個時段需填寫起訖日期。`;
+    if (!slot.startTime || !slot.endTime) return `第 ${i + 1} 個時段請填寫完整起訖時間。`;
+    if (!start || !end || end <= start) return `第 ${i + 1} 個時段結束時間必須晚於開始時間。`;
   }
 
   return "";
 }
 
 function validateTeacher() {
-  const d = collectTeacherForm();
+  const data = collectTeacherForm();
   const errs = [];
-  if (!d.teacherName) errs.push("請輸入教師姓名。");
-  if (!d.department) errs.push("請輸入任教單位。");
-  if (!d.teacherId) errs.push("請輸入教師編號。");
-  if (!d.eventDateStart) errs.push("請選擇活動起始日期。");
-  if (!d.eventDateEnd) errs.push("請選擇活動結束日期。");
-  if (d.eventDateStart && d.eventDateEnd && d.eventDateEnd < d.eventDateStart) {
-    errs.push("活動結束日期需晚於或等於起始日期。");
-  }
-  const slotErr = validateTimeSlots(d.timeSlots);
+  if (!data.teacherName) errs.push("請填寫教師姓名。");
+  if (!data.department) errs.push("請填寫任教單位。");
+  if (!data.teacherId) errs.push("請填寫教師編號。");
+  const slotErr = validateTimeSlots(data.timeSlots, data.eventDateStart, data.eventDateEnd);
   if (slotErr) errs.push(slotErr);
-  if (!d.courseTitle) errs.push("請輸入活動名稱。");
-  if (!d.organizer) errs.push("請輸入舉辦單位。");
-  if (!d.relevance) errs.push("請填寫教學專業成長。");
-  if (!d.hasCert) errs.push("請選擇是否核發證書。");
-  if (d.hasCert === "yes" && !d.certNo) errs.push("請輸入證書字號。");
-  if (!d.attachmentCount) errs.push("請至少上傳 1 份附件。");
+  if (!data.courseTitle) errs.push("請填寫活動名稱。");
+  if (!data.organizer) errs.push("請填寫舉辦單位。");
+  if (!data.relevance) errs.push("請填寫教學專業成長。");
+  if (!data.hasCert) errs.push("請選擇是否核發證書。");
+  if (data.hasCert === "yes" && !data.certNo) errs.push("請填寫證書字號。");
+  if (!data.attachmentCount) errs.push("請至少上傳 1 份附件。");
   return errs;
 }
 
@@ -191,7 +206,12 @@ formT?.addEventListener("change", (e) => {
 timeSlotsOut?.addEventListener("input", (e) => {
   const target = e.target;
   if (!(target instanceof HTMLElement)) return;
-  if (target.classList.contains("slot-start") || target.classList.contains("slot-end")) {
+  if (
+    target.classList.contains("slot-start") ||
+    target.classList.contains("slot-end") ||
+    target.classList.contains("slot-date-start") ||
+    target.classList.contains("slot-date-end")
+  ) {
     updateHoursOut();
   }
 });
@@ -219,27 +239,28 @@ btnAddTimeSlotOut?.addEventListener("click", () => {
 filesInput?.addEventListener("change", () => {
   if (!fileList) return;
   fileList.innerHTML = "";
-  Array.from(filesInput.files || []).forEach((f, i) => {
+  Array.from(filesInput.files || []).forEach((file, i) => {
     const li = document.createElement("li");
-    li.textContent = `${i + 1}. ${f.name} (${Math.round(f.size / 1024)} KB)`;
+    li.textContent = `${i + 1}. ${file.name} (${Math.round(file.size / 1024)} KB)`;
     fileList.appendChild(li);
   });
 });
 
 formT?.addEventListener("submit", (e) => {
   e.preventDefault();
-  msgEl.textContent = "";
+  setMsg("success", "");
   const errs = validateTeacher();
   if (errs.length) {
     msgEl.innerHTML = `<span style="color:#dc2626">${errs.join("<br>")}</span>`;
     return;
   }
-  if (!confirm("確認要送出申請嗎？")) return;
+  if (!window.confirm("確認要送出申請嗎？")) return;
 
   setMsg("success", "送出中，請稍候…");
   const data = collectTeacherForm();
   const timeSlotsPayload = data.timeSlots.map((slot, idx) => ({
-    slot_date: data.eventDateStart || "",
+    slot_date: slot.startDate || data.eventDateStart || "",
+    slot_end_date: slot.endDate || slot.startDate || data.eventDateEnd || "",
     start_time: slot.startTime,
     end_time: slot.endTime,
     sort_order: idx,
@@ -255,9 +276,10 @@ formT?.addEventListener("submit", (e) => {
       time_slots: timeSlotsPayload,
       summary: {
         event_name: data.courseTitle,
-        event_date: data.eventDateStart && data.eventDateEnd
-          ? `${data.eventDateStart} ~ ${data.eventDateEnd}`
-          : data.eventDateStart || data.eventDateEnd || "",
+        event_date:
+          data.eventDateStart && data.eventDateEnd
+            ? `${data.eventDateStart} ~ ${data.eventDateEnd}`
+            : data.eventDateStart || data.eventDateEnd || "",
         organizer: data.organizer,
       },
     }),
@@ -271,6 +293,7 @@ formT?.addEventListener("submit", (e) => {
         await rollbackApplication(appId);
         throw new Error("送出失敗：缺少申請編號或附件。");
       }
+
       const fd = new FormData();
       files.forEach((file) => fd.append("files", file));
       try {
@@ -281,7 +304,10 @@ formT?.addEventListener("submit", (e) => {
         });
         const uploadBody = await uploadRes.json().catch(() => ({}));
         if (!uploadRes.ok || uploadBody.ok === false) {
-          if (uploadBody.error === "only_pdf_or_xlsx_allowed" || uploadBody.error === "only_supported_file_types") {
+          if (
+            uploadBody.error === "only_pdf_or_xlsx_allowed" ||
+            uploadBody.error === "only_supported_file_types"
+          ) {
             throw new Error("只支援 PDF、Excel（.xlsx）或圖檔（JPG/PNG/WebP/GIF/BMP）。");
           }
           throw new Error(uploadBody.error || "upload_failed");
@@ -290,48 +316,58 @@ formT?.addEventListener("submit", (e) => {
         await rollbackApplication(appId);
         throw error;
       }
+
       setMsg("success", "送出成功，將前往歷史紀錄。");
-      setTimeout(() => (window.location.href = "history"), 300);
+      setTimeout(() => {
+        window.location.href = "history";
+      }, 300);
     })
     .catch((err) => setMsg("error", err.message));
 });
 
-function fillPdfForm(d) {
+function fillPdfForm(data) {
   const setText = (id, value) => {
     const el = document.getElementById(id);
     if (el) el.textContent = value || "";
   };
 
-  setText("pdf_teacherName", d.teacherName);
-  setText("pdf_department", d.department);
-  setText("pdf_teacherId", d.teacherId);
-  setText("pdf_ext", d.ext);
-  const dateRange = d.eventDateStart && d.eventDateEnd
-    ? `${d.eventDateStart} ~ ${d.eventDateEnd}`
-    : d.eventDateStart || d.eventDateEnd || "";
-  setText("pdf_eventDate", dateRange);
-  setText("pdf_start", d.startTime);
-  setText("pdf_end", d.endTime);
-  setText("pdf_courseTitle", d.courseTitle);
-  setText("pdf_organizer", d.organizer);
-  setText("pdf_relevance", d.relevance);
+  const slots = (data.timeSlots || []).filter(
+    (s) => (s.startDate || s.slotDate) && s.startTime && s.endDate && s.endTime
+  );
+  const firstSlot = slots[0];
+  const lastSlot = slots[slots.length - 1];
+
+  setText("pdf_teacherName", data.teacherName);
+  setText("pdf_department", data.department);
+  setText("pdf_teacherId", data.teacherId);
+  setText("pdf_ext", data.ext);
+  setText(
+    "pdf_eventDate",
+    data.eventDateStart && data.eventDateEnd
+      ? `${data.eventDateStart} ~ ${data.eventDateEnd}`
+      : data.eventDateStart || data.eventDateEnd || ""
+  );
+  setText(
+    "pdf_start",
+    firstSlot ? `${firstSlot.startDate || firstSlot.slotDate} ${firstSlot.startTime}` : data.startTime
+  );
+  setText("pdf_end", lastSlot ? `${lastSlot.endDate} ${lastSlot.endTime}` : data.endTime);
+  setText("pdf_courseTitle", data.courseTitle);
+  setText("pdf_organizer", data.organizer);
+  setText("pdf_relevance", data.relevance);
 
   let hasCertText = "";
-  if (d.hasCert === "yes") hasCertText = "是";
-  else if (d.hasCert === "no") hasCertText = "否";
+  if (data.hasCert === "yes") hasCertText = "是";
+  if (data.hasCert === "no") hasCertText = "否";
   setText("pdf_hasCert", hasCertText);
-
-  setText(
-    "pdf_certNo",
-    d.hasCert === "yes" && d.certNo ? `證書字號：${d.certNo}` : ""
-  );
+  setText("pdf_certNo", data.hasCert === "yes" && data.certNo ? `證書字號：${data.certNo}` : "");
 
   const filesEl = document.getElementById("pdf_files");
   if (filesEl) {
-    const list = Array.from(filesInput?.files || [])
-      .map((f, i) => `${i + 1}. ${f.name}`)
-      .join("\n");
-    filesEl.textContent = list || "（無附件）";
+    filesEl.textContent =
+      Array.from(filesInput?.files || [])
+        .map((f, i) => `${i + 1}. ${f.name}`)
+        .join("\n") || "（無附件）";
   }
 }
 
@@ -345,19 +381,19 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 btnScoreOut?.addEventListener("click", async () => {
-  if (relevanceScoreValue) relevanceScoreValue.textContent = "評分中…";
+  if (relevanceScoreValue) relevanceScoreValue.textContent = "評分中...";
   setScoreMsg("success", "");
 
   const relevance = formT?.querySelector('textarea[name="relevance"]')?.value?.trim() || "";
   const files = Array.from(filesInput?.files || []);
   if (!relevance) {
     if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
-    setScoreMsg("error", "請先填寫教學專業成長說明。");
+    setScoreMsg("error", "請先填寫教學專業成長欄位。");
     return;
   }
   if (!files.length) {
     if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
-    setScoreMsg("error", "請先上傳至少 1 份佐證檔案。");
+    setScoreMsg("error", "請先上傳至少 1 份附件後再評分。");
     return;
   }
 
@@ -365,30 +401,20 @@ btnScoreOut?.addEventListener("click", async () => {
     const fd = new FormData();
     fd.append("relevance", relevance);
     files.forEach((f) => fd.append("files", f));
-
     const res = await fetch(`${API_BASE}/api/ai/relevance`, {
       method: "POST",
       credentials: "include",
       body: fd,
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok || body.ok === false) {
-      const err = body.error || "score_failed";
-      if (err === "not_logged_in") {
-        throw new Error("請先登入後再評分。");
-      }
-      if (err === "forbidden") {
-        throw new Error("權限不足，無法評分。");
-      }
-      throw new Error(err);
-    }
-    const result = body.data || {};
-    const score = result.score;
-    const reason = result.reason || "";
+    if (!res.ok || body.ok === false) throw new Error(body.error || "score_failed");
+
+    const score = body.data?.score;
+    const reason = body.data?.reason || "";
     if (relevanceScoreValue) {
-      relevanceScoreValue.textContent = typeof score === "number" ? `${score} / 5` : "完成";
+      relevanceScoreValue.textContent = typeof score === "number" ? `${score} / 5` : "評分完成";
     }
-    setScoreMsg("success", reason ? `原因：${reason}` : "評分完成");
+    setScoreMsg("success", reason ? `說明：${reason}` : "評分完成。");
   } catch (err) {
     if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
     setScoreMsg("error", err.message || "評分失敗");

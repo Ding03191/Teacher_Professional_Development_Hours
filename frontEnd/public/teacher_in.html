@@ -84,23 +84,15 @@
                   <span class="lbl req">活動地點</span>
                   <input name="location" required placeholder="請填校內教室 / 會議室，校外請詳述地區">
                 </label>
-                <label class="field">
-                  <span class="lbl req">活動日期（起）</span>
-                  <input name="eventDateStart" type="date" required>
-                </label>
-                <label class="field">
-                  <span class="lbl req">活動日期（訖）</span>
-                  <input name="eventDateEnd" type="date" required>
-                </label>
 
-                <div class="field">
-                  <span class="lbl req">活動起訖時間</span>
-                  <div class="time-grid">
-                    <input name="startTime" type="time" required>
-                    <span class="muted time-sep">～</span>
-                    <input name="endTime" type="time" required>
+                <div class="field span-2">
+                  <span class="lbl req">活動起訖時段（每個時段需設定日期）</span>
+                  <div class="time-slot-panel">
+                    <div class="time-slot-toolbar">
+                      <button id="btnAddTimeSlotIn" type="button" class="btn icon-btn" aria-label="新增時段">+</button>
+                    </div>
+                    <div id="timeSlotsIn" class="time-slots"></div>
                   </div>
-                  <p class="muted datetime-hint">例如：14:00～16:00</p>
                 </div>
 
 
@@ -115,7 +107,7 @@
 
               <!-- 鏈結領域（下拉多選） -->
               <div class="field">
-                <span class="lbl req">鏈結領域（可複選）</span>
+                <span class="lbl">鏈結領域（可複選）</span>
                 <div class="multi-select" data-multi="domain">
                   <button type="button" class="ms-trigger" aria-haspopup="listbox" aria-expanded="false">
                     <span class="ms-placeholder">請選擇鏈結領域</span>
@@ -135,7 +127,7 @@
                     <label class="ms-option"><input type="checkbox" value="品德教育">品德教育</label>
                     <label class="ms-option"><input type="checkbox" value="性別平等">性別平等</label>
                   </div>
-                  <input type="hidden" name="domain" id="domainSelect" required>
+                  <input type="hidden" name="domain" id="domainSelect">
                 </div>
 
                 <p class="muted">點擊展開後可複選</p>
@@ -148,7 +140,7 @@
 
               <!-- SDGs（下拉多選） -->
               <div class="field">
-                <span class="lbl req">對接 SDGs 指標（可複選）</span>
+                <span class="lbl">對接 SDGs 指標（可複選）</span>
                 <div class="multi-select" data-multi="sdg">
                   <button type="button" class="ms-trigger" aria-haspopup="listbox" aria-expanded="false">
                     <span class="ms-placeholder">請選擇 SDGs 指標</span>
@@ -174,7 +166,7 @@
                     <label class="ms-option"><input type="checkbox" value="SDG16">SDG16 和平、正義及健全制度</label>
                     <label class="ms-option"><input type="checkbox" value="SDG17">SDG17 多元夥伴關係</label>
                   </div>
-                  <input type="hidden" name="sdg" id="sdgSelect" required>
+                  <input type="hidden" name="sdg" id="sdgSelect">
                 </div>
 
                 <p class="muted">點擊展開後可複選</p>
@@ -189,7 +181,7 @@
           <div class="card-bd">
             <div class="grid">
               <label class="field">
-                <span class="lbl">活動與提昗教師教學專業發展之關係（教學專業）</span>
+                <span class="lbl">活動與提升教師教學專業發展之關係（教學專業）</span>
                 <textarea name="teachingRelation" placeholder="例如：對教學方法、課程設計、教學評量或教學素養的提升說明。" required></textarea>
               </label>
             </div>
@@ -204,6 +196,9 @@
               <span class="lbl">上傳佐證資料（可多檔）</span>
               <input id="filesIn" type="file" multiple accept=".pdf,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp">
               <ul id="fileListIn" class="file-list"></ul>
+              <p class="sample-download-wrap">
+                <a id="sampleExcelLinkIn" class="sample-download-link" href="./ex.csv" download>下載附件範例（Excel）</a>
+              </p>
               <p class="muted">僅支援 PDF 或 Excel 檔案。</p>
             </div>
           </div>

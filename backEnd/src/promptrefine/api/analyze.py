@@ -208,43 +208,6 @@ def predict():
     )
 
 
-@analyze_bp.post("/api/ai/relevance")
-@require_role("dept")
-def ai_relevance():
-    def sanitize_filename(filename: str):
-        name, ext = os.path.splitext(filename or "")
-        name = re.sub(r"[^A-Za-z0-9_-]+", "_", name)
-        name = name.strip("_") or "uploaded"
-        stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
-        return f"{name}_{stamp}{ext}"
-
-    relevance = (request.form.get("relevance") or "").strip()
-    files = request.files.getlist("files")
-    if not relevance:
-        return jsonify({"ok": False, "error": "missing_relevance"}), 400
-    if not files:
-        return jsonify({"ok": False, "error": "no_files"}), 400
-
-    os.makedirs(_ATTACHMENTS_DIR, exist_ok=True)
-    texts = []
-    for f in files:
-        filename = f.filename or ""
-        if not filename.lower().endswith(".pdf"):
-            return jsonify({"ok": False, "error": "only_pdf_allowed"}), 400
-        stored = sanitize_filename(filename)
-        path = os.path.join(_ATTACHMENTS_DIR, stored)
-        f.save(path)
-        content = da.extract_file_content(path)
-        texts.append(content)
-
-    evidence_text = "\n\n".join(texts)
-    try:
-        result = da.score_relevance(relevance, evidence_text)
-        return jsonify({"ok": True, "data": result})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
 @analyze_bp.post("/api/ai/attendance")
 @require_role("dept")
 def ai_attendance():

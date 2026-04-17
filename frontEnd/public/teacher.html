@@ -164,20 +164,13 @@
             </div>
 
             <div class="grid g-2">
-              <label class="field">
-                <span class="lbl req">活動日期（起）</span>
-                <input name="eventDateStart" type="date" required>
-              </label>
-              <label class="field">
-                <span class="lbl req">活動日期（訖）</span>
-                <input name="eventDateEnd" type="date" required>
-              </label>
-
-              <div class="field">
-                <span class="lbl req">活動起訖時間</span>
-                <div id="timeSlotsOut" class="time-slots"></div>
-                <div class="row">
-                  <button id="btnAddTimeSlotOut" type="button" class="btn ghost">+ 新增時段</button>
+              <div class="field field-span-2">
+                <span class="lbl req">活動起訖時段（每個時段需設定日期）</span>
+                <div class="time-slot-panel">
+                  <div class="time-slot-toolbar">
+                    <button id="btnAddTimeSlotOut" type="button" class="btn icon-btn" aria-label="新增時段">+</button>
+                  </div>
+                  <div id="timeSlotsOut" class="time-slots"></div>
                 </div>
               </div>
 
@@ -221,16 +214,6 @@
                        accept=".pdf,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp" required>
                 <p class="muted">請至少上傳 1 份：PDF、Excel 或圖檔（JPG/PNG/WebP/GIF/BMP）。</p>
                 <ul id="fileList" class="file-list"></ul>
-                <div class="ai-score">
-                  <div class="ai-score-title">AI 相關度評分</div>
-
-
-                  <div class="ai-score-value" id="relevanceScoreValue">尚未評分</div>
-                  <button type="button" class="btn ghost" id="btnScoreOut">開始評分</button>
-                  <div class="ai-score-msg" id="relevanceScoreMsg"></div>
-                </div>
-
-
               </div>
             </div>
 

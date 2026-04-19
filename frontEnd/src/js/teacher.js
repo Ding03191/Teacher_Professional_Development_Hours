@@ -10,13 +10,15 @@ const relevanceScoreValue = document.getElementById("relevanceScoreValue");
 const relevanceScoreMsg = document.getElementById("relevanceScoreMsg");
 const timeSlotsOut = document.getElementById("timeSlotsOut");
 const btnAddTimeSlotOut = document.getElementById("btnAddTimeSlotOut");
-let hoursInputOut = null;
 
-function timeToMinutes(value) {
-  if (!value || !value.includes(":")) return null;
-  const [hh, mm] = value.split(":").map((v) => parseInt(v, 10));
-  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
-  return hh * 60 + mm;
+let hoursInputOut = null;
+let isSubmittingOut = false;
+
+function parseSlotDateTime(dateValue, timeValue) {
+  if (!dateValue || !timeValue) return null;
+  const d = new Date(`${dateValue}T${timeValue}:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
 }
 
 function calcRoundedHoursFromSlots(slots) {
@@ -26,7 +28,6 @@ function calcRoundedHoursFromSlots(slots) {
     if (!start || !end || end <= start) return sum;
     return sum + Math.round((end.getTime() - start.getTime()) / 60000);
   }, 0);
-
   if (totalMinutes <= 0) return "";
   const rounded = Math.round(totalMinutes / 60);
   return String(Math.min(4, Math.max(1, rounded)));
@@ -35,13 +36,13 @@ function calcRoundedHoursFromSlots(slots) {
 function setMsg(type, text) {
   if (!msgEl) return;
   const color = type === "error" ? "#dc2626" : "#16a34a";
-  msgEl.innerHTML = `<span style="color:${color}">${text}</span>`;
+  msgEl.innerHTML = `<span style="color:${color}">${text || ""}</span>`;
 }
 
 function setScoreMsg(type, text) {
   if (!relevanceScoreMsg) return;
   const color = type === "error" ? "#dc2626" : "#16a34a";
-  relevanceScoreMsg.innerHTML = `<span style="color:${color}">${text}</span>`;
+  relevanceScoreMsg.innerHTML = `<span style="color:${color}">${text || ""}</span>`;
 }
 
 async function rollbackApplication(appId) {
@@ -56,26 +57,20 @@ async function rollbackApplication(appId) {
   }
 }
 
-function getDefaultSlotDate() {
-  return "";
-}
-
-function parseSlotDateTime(dateValue, timeValue) {
-  if (!dateValue || !timeValue) return null;
-  const d = new Date(`${dateValue}T${timeValue}:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return d;
-}
-
 function createTimeSlotRow(slot = {}) {
   const row = document.createElement("div");
   row.className = "time-slot-row";
   row.innerHTML = `
-    <input type="date" class="slot-date-start" value="${slot.startDate || slot.slotDate || getDefaultSlotDate()}" required>
-    <input type="date" class="slot-date-end" value="${slot.endDate || slot.slotEndDate || slot.slotDate || getDefaultSlotDate()}" required>
-    <input type="time" class="slot-start" value="${slot.startTime || ""}" required>
-    <span class="time-slot-sep">～</span>
-    <input type="time" class="slot-end" value="${slot.endTime || ""}" required>
+    <div class="time-slot-date-group">
+      <input type="date" class="slot-date-start" value="${slot.startDate || slot.slotDate || ""}" required>
+      <span class="time-slot-sep">~</span>
+      <input type="date" class="slot-date-end" value="${slot.endDate || slot.slotEndDate || slot.slotDate || ""}" required>
+    </div>
+    <div class="time-slot-time-group">
+      <input type="time" class="slot-start" value="${slot.startTime || ""}" required>
+      <span class="time-slot-sep">~</span>
+      <input type="time" class="slot-end" value="${slot.endTime || ""}" required>
+    </div>
     <button type="button" class="btn ghost slot-remove" aria-label="移除時段">×</button>
   `;
   return row;
@@ -83,7 +78,7 @@ function createTimeSlotRow(slot = {}) {
 
 function ensureTimeSlotsOut() {
   if (!timeSlotsOut) return;
-  if (timeSlotsOut.children.length > 0) return;
+  if (timeSlotsOut.querySelector(".time-slot-row")) return;
   timeSlotsOut.appendChild(createTimeSlotRow());
   refreshTimeSlotRemoveState();
 }
@@ -132,14 +127,8 @@ function collectTeacherForm() {
   const fd = new FormData(formT);
   const timeSlots = getTimeSlotsOut();
   const firstSlot = timeSlots[0] || { startTime: "", endTime: "" };
-  const startDates = timeSlots
-    .map((slot) => slot.startDate)
-    .filter(Boolean)
-    .sort();
-  const endDates = timeSlots
-    .map((slot) => slot.endDate)
-    .filter(Boolean)
-    .sort();
+  const startDates = timeSlots.map((slot) => slot.startDate).filter(Boolean).sort();
+  const endDates = timeSlots.map((slot) => slot.endDate).filter(Boolean).sort();
   const eventDateStart = startDates[0] || endDates[0] || "";
   const eventDateEnd = endDates[endDates.length - 1] || eventDateStart;
   return {
@@ -164,9 +153,8 @@ function collectTeacherForm() {
   };
 }
 
-function validateTimeSlots(slots, eventDateStart, eventDateEnd) {
+function validateTimeSlots(slots) {
   if (!Array.isArray(slots) || slots.length === 0) return "請至少新增 1 個時段。";
-
   for (let i = 0; i < slots.length; i += 1) {
     const slot = slots[i] || {};
     const start = parseSlotDateTime(slot.startDate, slot.startTime);
@@ -175,7 +163,6 @@ function validateTimeSlots(slots, eventDateStart, eventDateEnd) {
     if (!slot.startTime || !slot.endTime) return `第 ${i + 1} 個時段請填寫完整起訖時間。`;
     if (!start || !end || end <= start) return `第 ${i + 1} 個時段結束時間必須晚於開始時間。`;
   }
-
   return "";
 }
 
@@ -185,7 +172,7 @@ function validateTeacher() {
   if (!data.teacherName) errs.push("請填寫教師姓名。");
   if (!data.department) errs.push("請填寫任教單位。");
   if (!data.teacherId) errs.push("請填寫教師編號。");
-  const slotErr = validateTimeSlots(data.timeSlots, data.eventDateStart, data.eventDateEnd);
+  const slotErr = validateTimeSlots(data.timeSlots);
   if (slotErr) errs.push(slotErr);
   if (!data.courseTitle) errs.push("請填寫活動名稱。");
   if (!data.organizer) errs.push("請填寫舉辦單位。");
@@ -246,17 +233,22 @@ filesInput?.addEventListener("change", () => {
   });
 });
 
-formT?.addEventListener("submit", (e) => {
+formT?.addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (isSubmittingOut) return;
   setMsg("success", "");
+
   const errs = validateTeacher();
   if (errs.length) {
     msgEl.innerHTML = `<span style="color:#dc2626">${errs.join("<br>")}</span>`;
     return;
   }
+
   if (!window.confirm("確認要送出申請嗎？")) return;
 
+  isSubmittingOut = true;
   setMsg("success", "送出中，請稍候…");
+
   const data = collectTeacherForm();
   const timeSlotsPayload = data.timeSlots.map((slot, idx) => ({
     slot_date: slot.startDate || data.eventDateStart || "",
@@ -266,119 +258,70 @@ formT?.addEventListener("submit", (e) => {
     sort_order: idx,
   }));
 
-  fetch(`${API_BASE}/api/applications`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      app_type: "out",
-      data,
-      time_slots: timeSlotsPayload,
-      summary: {
-        event_name: data.courseTitle,
-        event_date:
-          data.eventDateStart && data.eventDateEnd
-            ? `${data.eventDateStart} ~ ${data.eventDateEnd}`
-            : data.eventDateStart || data.eventDateEnd || "",
-        organizer: data.organizer,
-      },
-    }),
-  })
-    .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
-    .then(async ({ ok, body }) => {
-      if (!ok || body.ok === false) throw new Error(body.error || "submit_failed");
-      const appId = body.data?.id;
-      const files = Array.from(filesInput?.files || []);
-      if (!appId || files.length === 0) {
-        await rollbackApplication(appId);
-        throw new Error("送出失敗：缺少申請編號或附件。");
-      }
+  try {
+    const res = await fetch(`${API_BASE}/api/applications`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        app_type: "out",
+        data,
+        time_slots: timeSlotsPayload,
+        summary: {
+          event_name: data.courseTitle,
+          event_date:
+            data.eventDateStart && data.eventDateEnd
+              ? `${data.eventDateStart} ~ ${data.eventDateEnd}`
+              : data.eventDateStart || data.eventDateEnd || "",
+          organizer: data.organizer,
+        },
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.ok === false) throw new Error(body.error || "submit_failed");
 
-      const fd = new FormData();
-      files.forEach((file) => fd.append("files", file));
-      try {
-        const uploadRes = await fetch(`${API_BASE}/api/applications/${appId}/files`, {
-          method: "POST",
-          credentials: "include",
-          body: fd,
-        });
-        const uploadBody = await uploadRes.json().catch(() => ({}));
-        if (!uploadRes.ok || uploadBody.ok === false) {
-          if (
-            uploadBody.error === "only_pdf_or_xlsx_allowed" ||
-            uploadBody.error === "only_supported_file_types"
-          ) {
-            throw new Error("只支援 PDF、Excel（.xlsx）或圖檔（JPG/PNG/WebP/GIF/BMP）。");
-          }
-          throw new Error(uploadBody.error || "upload_failed");
+    const appId = body.data?.id;
+    const files = Array.from(filesInput?.files || []);
+    if (!appId || files.length === 0) {
+      await rollbackApplication(appId);
+      throw new Error("送出失敗：缺少申請編號或附件。");
+    }
+
+    const fd = new FormData();
+    files.forEach((file) => fd.append("files", file));
+
+    try {
+      const uploadRes = await fetch(`${API_BASE}/api/applications/${appId}/files`, {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+      const uploadBody = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok || uploadBody.ok === false) {
+        if (
+          uploadBody.error === "only_pdf_or_xlsx_allowed" ||
+          uploadBody.error === "only_supported_file_types"
+        ) {
+          throw new Error("只支援 PDF、Excel（.xlsx）或圖檔（JPG/PNG/WebP/GIF/BMP）。");
         }
-      } catch (error) {
-        await rollbackApplication(appId);
-        throw error;
+        throw new Error(uploadBody.error || "upload_failed");
       }
+    } catch (error) {
+      await rollbackApplication(appId);
+      throw error;
+    }
 
-      setMsg("success", "送出成功，將前往歷史紀錄。");
-      setTimeout(() => {
-        window.location.href = "history";
-      }, 300);
-    })
-    .catch((err) => setMsg("error", err.message));
-});
-
-function fillPdfForm(data) {
-  const setText = (id, value) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value || "";
-  };
-
-  const slots = (data.timeSlots || []).filter(
-    (s) => (s.startDate || s.slotDate) && s.startTime && s.endDate && s.endTime
-  );
-  const firstSlot = slots[0];
-  const lastSlot = slots[slots.length - 1];
-
-  setText("pdf_teacherName", data.teacherName);
-  setText("pdf_department", data.department);
-  setText("pdf_teacherId", data.teacherId);
-  setText("pdf_ext", data.ext);
-  setText(
-    "pdf_eventDate",
-    data.eventDateStart && data.eventDateEnd
-      ? `${data.eventDateStart} ~ ${data.eventDateEnd}`
-      : data.eventDateStart || data.eventDateEnd || ""
-  );
-  setText(
-    "pdf_start",
-    firstSlot ? `${firstSlot.startDate || firstSlot.slotDate} ${firstSlot.startTime}` : data.startTime
-  );
-  setText("pdf_end", lastSlot ? `${lastSlot.endDate} ${lastSlot.endTime}` : data.endTime);
-  setText("pdf_courseTitle", data.courseTitle);
-  setText("pdf_organizer", data.organizer);
-  setText("pdf_relevance", data.relevance);
-
-  let hasCertText = "";
-  if (data.hasCert === "yes") hasCertText = "是";
-  if (data.hasCert === "no") hasCertText = "否";
-  setText("pdf_hasCert", hasCertText);
-  setText("pdf_certNo", data.hasCert === "yes" && data.certNo ? `證書字號：${data.certNo}` : "");
-
-  const filesEl = document.getElementById("pdf_files");
-  if (filesEl) {
-    filesEl.textContent =
-      Array.from(filesInput?.files || [])
-        .map((f, i) => `${i + 1}. ${f.name}`)
-        .join("\n") || "（無附件）";
+    setMsg("success", "送出成功，將前往歷史紀錄。");
+    setTimeout(() => {
+      window.location.href = "history";
+    }, 300);
+  } catch (err) {
+    setMsg("error", err.message || "送出失敗");
+    isSubmittingOut = false;
   }
-}
-
-window.fillPdfForm = fillPdfForm;
-
-document.addEventListener("DOMContentLoaded", () => {
-  ensureTimeSlotsOut();
-  ensureHoursFieldOut();
-  refreshTimeSlotRemoveState();
-  updateHoursOut();
 });
+
+window.fillPdfForm = function fillPdfForm() {};
 
 btnScoreOut?.addEventListener("click", async () => {
   if (relevanceScoreValue) relevanceScoreValue.textContent = "評分中...";
@@ -419,4 +362,11 @@ btnScoreOut?.addEventListener("click", async () => {
     if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
     setScoreMsg("error", err.message || "評分失敗");
   }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  ensureTimeSlotsOut();
+  ensureHoursFieldOut();
+  refreshTimeSlotRemoveState();
+  updateHoursOut();
 });

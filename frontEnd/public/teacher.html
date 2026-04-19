@@ -166,11 +166,23 @@
             <div class="grid g-2">
               <div class="field field-span-2">
                 <span class="lbl req">活動起訖時段（每個時段需設定日期）</span>
-                <div class="time-slot-panel">
-                  <div class="time-slot-toolbar">
-                    <button id="btnAddTimeSlotOut" type="button" class="btn icon-btn" aria-label="新增時段">+</button>
+                <div class="time-slot-inline">
+                  <div id="timeSlotsOut" class="time-slots">
+                    <div class="time-slot-row">
+                      <div class="time-slot-date-group">
+                        <input type="date" class="slot-date-start" required>
+                        <span class="time-slot-sep">~</span>
+                        <input type="date" class="slot-date-end" required>
+                      </div>
+                      <div class="time-slot-time-group">
+                        <input type="time" class="slot-start" required>
+                        <span class="time-slot-sep">~</span>
+                        <input type="time" class="slot-end" required>
+                      </div>
+                      <button type="button" class="btn ghost slot-remove" aria-label="移除時段" style="visibility:hidden" disabled>×</button>
+                    </div>
                   </div>
-                  <div id="timeSlotsOut" class="time-slots"></div>
+                  <button id="btnAddTimeSlotOut" type="button" class="btn icon-btn time-slot-add" aria-label="新增時段">+</button>
                 </div>
               </div>
 

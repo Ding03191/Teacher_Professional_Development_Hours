@@ -139,6 +139,20 @@ def _resolve_time_slots(app_type: str, data: dict, payload_slots):
         return None
     return []
 
+def _has_future_time_slots(time_slots: list):
+    now = datetime.now()
+    now_date = now.strftime("%Y-%m-%d")
+    now_time = now.strftime("%H:%M")
+    for slot in time_slots or []:
+        slot_date = (slot.get("slot_date") or "").strip()
+        start_time = (slot.get("start_time") or "").strip()
+        end_time = (slot.get("end_time") or "").strip()
+        if slot_date and slot_date > now_date:
+            return True
+        if slot_date == now_date and ((start_time and start_time > now_time) or (end_time and end_time > now_time)):
+            return True
+    return False
+
 
 def _inject_time_slots_into_data(data: dict, time_slots: list):
     data["timeSlots"] = [
@@ -270,6 +284,8 @@ def create_application():
     time_slots = _resolve_time_slots(app_type, data, payload.get("time_slots"))
     if time_slots is None:
         return _err("invalid_time_slots")
+    if _has_future_time_slots(time_slots):
+        return _err("future_time_not_allowed")
     _inject_time_slots_into_data(data, time_slots)
     unit_name = session.get("unit_name") or ""
     account = session.get("account") or ""
@@ -332,6 +348,8 @@ def update_application(app_id: int):
     time_slots = _resolve_time_slots(record.get("app_type") or "", data, payload.get("time_slots"))
     if time_slots is None:
         return _err("invalid_time_slots")
+    if _has_future_time_slots(time_slots):
+        return _err("future_time_not_allowed")
     _inject_time_slots_into_data(data, time_slots)
     db.update_application(app_id, data, summary or {}, time_slots=time_slots)
     return _ok({"id": app_id})

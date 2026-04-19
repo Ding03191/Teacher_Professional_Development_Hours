@@ -152,24 +152,26 @@ textarea{
   gap:10px;
 }
 
-.time-slot-panel{
-  border:1px solid #e6ebf3;
-  border-radius:14px;
-  padding:10px;
-  background:#ffffff;
+.time-slot-inline{
   display:grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap:10px;
+  align-items:start;
 }
 
 .time-slot-row{
   display:grid;
-  grid-template-columns: 1.1fr 1fr auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .85fr) auto;
   gap:10px;
   align-items:center;
-  padding:9px 10px;
-  background:#fff;
-  border:1px solid #e8edf5;
-  border-radius:12px;
+}
+
+.time-slot-date-group,
+.time-slot-time-group{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap:10px;
+  align-items:center;
 }
 
 .time-slot-sep{
@@ -178,21 +180,39 @@ textarea{
   white-space:nowrap;
 }
 
+.time-slot-add{
+  width:42px;
+  min-width:42px;
+  height:42px;
+  padding:0;
+  border-radius:12px;
+}
+
 .btn.slot-remove{
-  padding:8px 12px;
+  width:42px;
+  min-width:42px;
+  height:42px;
+  padding:0;
   border-radius:10px;
   color:#475569;
 }
 
 @media (max-width:840px){
-  .time-slot-row{
-    grid-template-columns: 1fr 1fr;
+  .time-slot-inline{
+    grid-template-columns: 1fr;
   }
-  .time-slot-row .time-slot-sep{
-    display:none;
+  .time-slot-row{
+    grid-template-columns: 1fr;
+  }
+  .time-slot-date-group,
+  .time-slot-time-group{
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
   .time-slot-row .slot-remove{
-    grid-column: 1 / -1;
+    justify-self:end;
+  }
+  .time-slot-add{
+    justify-self:end;
   }
 }
 

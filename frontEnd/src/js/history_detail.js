@@ -82,17 +82,6 @@ function renderAttachments(record) {
   const files = record.data?.attachments_files || [];
   const names = record.data?.attachments || [];
 
-  if (!files.length && !names.length) {
-    return `
-      <details class="attachments-panel" open>
-        <summary>附件</summary>
-        <div class="attachments-body">
-          <div class="muted">尚未上傳附件</div>
-        </div>
-      </details>
-    `;
-  }
-
   const stored = files.map((f, idx) => {
     const name = f.name || `附件 ${idx + 1}`;
     const ext = fileExt(name);
@@ -128,8 +117,15 @@ function renderAttachments(record) {
     <details class="attachments-panel" open>
       <summary>附件（${files.length || names.length}）</summary>
       <div class="attachments-body">
+        ${files.length || names.length ? "" : '<div class="muted">尚未上傳附件</div>'}
         ${stored.join("")}
         ${pendingNames.join("")}
+        <div class="attachments-upload">
+          <label class="lbl" for="detailFiles">重新上傳附件（可多檔）</label>
+          <input id="detailFiles" type="file" multiple accept=".pdf,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp">
+          <div id="detailUploadList" class="muted upload-list"></div>
+          <button type="button" id="btnUploadAttachments" class="btn ghost">上傳附件</button>
+        </div>
       </div>
     </details>
   `;
@@ -438,6 +434,50 @@ detailRoot?.addEventListener("submit", async (event) => {
     await loadDetail();
   } catch (err) {
     setMsg("error", err.message || "更新失敗。");
+  }
+});
+
+detailRoot?.addEventListener("change", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  if (target.id !== "detailFiles") return;
+  const list = detailRoot.querySelector("#detailUploadList");
+  if (!list) return;
+  const files = Array.from(target.files || []);
+  list.textContent = files.length
+    ? files.map((f, i) => `${i + 1}. ${f.name}`).join(" / ")
+    : "";
+});
+
+detailRoot?.addEventListener("click", async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.id !== "btnUploadAttachments" || !currentRecord) return;
+
+  const input = detailRoot.querySelector("#detailFiles");
+  if (!(input instanceof HTMLInputElement)) return;
+  const files = Array.from(input.files || []);
+  if (!files.length) {
+    setMsg("error", "請先選擇至少 1 個附件。");
+    return;
+  }
+
+  try {
+    const fd = new FormData();
+    files.forEach((file) => fd.append("files", file));
+    const res = await fetch(`${API_BASE}/api/applications/${currentRecord.id}/files`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.ok === false) {
+      throw new Error(body.error || "upload_failed");
+    }
+    setMsg("success", "附件上傳成功。");
+    await loadDetail();
+  } catch (err) {
+    setMsg("error", err.message || "附件上傳失敗。");
   }
 });
 

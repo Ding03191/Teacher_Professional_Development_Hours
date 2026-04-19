@@ -85,13 +85,20 @@
                   <input name="location" required placeholder="請填校內教室 / 會議室，校外請詳述地區">
                 </label>
 
-                <div class="field span-2">
-                  <span class="lbl req">活動起訖時段（每個時段需設定日期）</span>
-                  <div class="time-slot-panel">
-                    <div class="time-slot-toolbar">
-                      <button id="btnAddTimeSlotIn" type="button" class="btn icon-btn" aria-label="新增時段">+</button>
-                    </div>
-                    <div id="timeSlotsIn" class="time-slots"></div>
+                <div class="field">
+                  <span class="lbl req">活動日期</span>
+                  <div class="time-fixed-row">
+                    <input id="eventDateStartIn" type="date" class="slot-date-start" required>
+                    <span class="time-slot-sep">～</span>
+                    <input id="eventDateEndIn" type="date" class="slot-date-end" required>
+                  </div>
+                </div>
+                <div class="field">
+                  <span class="lbl req">活動時間</span>
+                  <div class="time-fixed-row">
+                    <input id="eventTimeStartIn" type="time" class="slot-start" required>
+                    <span class="time-slot-sep">～</span>
+                    <input id="eventTimeEndIn" type="time" class="slot-end" required>
                   </div>
                 </div>
 
@@ -184,6 +191,10 @@
                 <span class="lbl">活動與提升教師教學專業發展之關係（教學專業）</span>
                 <textarea name="teachingRelation" placeholder="例如：對教學方法、課程設計、教學評量或教學素養的提升說明。" required></textarea>
               </label>
+              <label class="field">
+                <span class="lbl">其他備註</span>
+                <textarea name="note" placeholder="例如：特殊情況補充、活動補充說明（選填）"></textarea>
+              </label>
             </div>
           </div>
         </article>
@@ -234,7 +245,7 @@
             <div class="grid" style="margin-top:12px;">
               <label class="field">
                 <span class="lbl">其他備註</span>
-                <textarea name="note" placeholder="例如：特殊說明、附件清單或補充事項。"></textarea>
+                <textarea name="notePrint" placeholder="例如：特殊說明、附件清單或補充事項。"></textarea>
               </label>
             </div>
           </div>
@@ -251,4 +262,3 @@
   <script src="../src/js/teacher_in.js" defer></script>
 </body>
 </html>
-

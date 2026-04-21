@@ -2,13 +2,10 @@ import logging
 
 from flask import Flask
 from flask_cors import CORS
-import openai
 
 from .config import Config
 from .db import dbStoring as db
 from .api.core import core_bp
-from .api.analyze import analyze_bp
-from .api.label import label_bp
 from .api.auth import auth_bp
 from .api.teacher import teacher_bp
 from .api.applications import applications_bp
@@ -24,12 +21,6 @@ def create_app():
 
     if not app.config["SECRET_KEY"]:
         raise ValueError("Error: SECRET_KEY environment variable is not set!")
-
-    openai.api_key = app.config["OPENAI_API_KEY"]
-    if not openai.api_key:
-        raise ValueError("Error: OPENAI_API_KEY environment variable is not set!")
-    if app.config.get("OPENAI_BASE_URL"):
-        openai.base_url = app.config["OPENAI_BASE_URL"]
 
     if app.config.get("DB_INIT_ON_START", True):
         db.init_db()
@@ -53,8 +44,6 @@ def create_app():
             )
 
     app.register_blueprint(core_bp)
-    app.register_blueprint(analyze_bp)
-    app.register_blueprint(label_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(teacher_bp)
     app.register_blueprint(departments_bp)

@@ -5,9 +5,6 @@ const filesInput = document.getElementById("files");
 const fileList = document.getElementById("fileList");
 const msgEl = document.getElementById("msg");
 const certNoBox = document.getElementById("certNoBox");
-const btnScoreOut = document.getElementById("btnScoreOut");
-const relevanceScoreValue = document.getElementById("relevanceScoreValue");
-const relevanceScoreMsg = document.getElementById("relevanceScoreMsg");
 const timeSlotsOut = document.getElementById("timeSlotsOut");
 const btnAddTimeSlotOut = document.getElementById("btnAddTimeSlotOut");
 
@@ -37,12 +34,6 @@ function setMsg(type, text) {
   if (!msgEl) return;
   const color = type === "error" ? "#dc2626" : "#16a34a";
   msgEl.innerHTML = `<span style="color:${color}">${text || ""}</span>`;
-}
-
-function setScoreMsg(type, text) {
-  if (!relevanceScoreMsg) return;
-  const color = type === "error" ? "#dc2626" : "#16a34a";
-  relevanceScoreMsg.innerHTML = `<span style="color:${color}">${text || ""}</span>`;
 }
 
 async function rollbackApplication(appId) {
@@ -322,47 +313,6 @@ formT?.addEventListener("submit", async (e) => {
 });
 
 window.fillPdfForm = function fillPdfForm() {};
-
-btnScoreOut?.addEventListener("click", async () => {
-  if (relevanceScoreValue) relevanceScoreValue.textContent = "評分中...";
-  setScoreMsg("success", "");
-
-  const relevance = formT?.querySelector('textarea[name="relevance"]')?.value?.trim() || "";
-  const files = Array.from(filesInput?.files || []);
-  if (!relevance) {
-    if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
-    setScoreMsg("error", "請先填寫教學專業成長欄位。");
-    return;
-  }
-  if (!files.length) {
-    if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
-    setScoreMsg("error", "請先上傳至少 1 份附件後再評分。");
-    return;
-  }
-
-  try {
-    const fd = new FormData();
-    fd.append("relevance", relevance);
-    files.forEach((f) => fd.append("files", f));
-    const res = await fetch(`${API_BASE}/api/ai/relevance`, {
-      method: "POST",
-      credentials: "include",
-      body: fd,
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok || body.ok === false) throw new Error(body.error || "score_failed");
-
-    const score = body.data?.score;
-    const reason = body.data?.reason || "";
-    if (relevanceScoreValue) {
-      relevanceScoreValue.textContent = typeof score === "number" ? `${score} / 5` : "評分完成";
-    }
-    setScoreMsg("success", reason ? `說明：${reason}` : "評分完成。");
-  } catch (err) {
-    if (relevanceScoreValue) relevanceScoreValue.textContent = "尚未評分";
-    setScoreMsg("error", err.message || "評分失敗");
-  }
-});
 
 document.addEventListener("DOMContentLoaded", () => {
   ensureTimeSlotsOut();

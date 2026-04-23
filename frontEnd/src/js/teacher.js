@@ -11,6 +11,14 @@ const btnAddTimeSlotOut = document.getElementById("btnAddTimeSlotOut");
 let hoursInputOut = null;
 let isSubmittingOut = false;
 
+function getTodayIsoLocal() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function parseSlotDateTime(dateValue, timeValue) {
   if (!dateValue || !timeValue) return null;
   const d = new Date(`${dateValue}T${timeValue}:00`);
@@ -49,13 +57,14 @@ async function rollbackApplication(appId) {
 }
 
 function createTimeSlotRow(slot = {}) {
+  const today = getTodayIsoLocal();
   const row = document.createElement("div");
   row.className = "time-slot-row";
   row.innerHTML = `
     <div class="time-slot-date-group">
-      <input type="date" class="slot-date-start" value="${slot.startDate || slot.slotDate || ""}" required>
+      <input type="date" class="slot-date-start" value="${slot.startDate || slot.slotDate || ""}" max="${today}" required>
       <span class="time-slot-sep">~</span>
-      <input type="date" class="slot-date-end" value="${slot.endDate || slot.slotEndDate || slot.slotDate || ""}" required>
+      <input type="date" class="slot-date-end" value="${slot.endDate || slot.slotEndDate || slot.slotDate || ""}" max="${today}" required>
     </div>
     <div class="time-slot-time-group">
       <input type="time" class="slot-start" value="${slot.startTime || ""}" required>
@@ -93,6 +102,14 @@ function getTimeSlotsOut() {
     startTime: row.querySelector(".slot-start")?.value?.trim() || "",
     endTime: row.querySelector(".slot-end")?.value?.trim() || "",
   }));
+}
+
+function applyDateMaxOut() {
+  if (!timeSlotsOut) return;
+  const today = getTodayIsoLocal();
+  timeSlotsOut.querySelectorAll(".slot-date-start, .slot-date-end").forEach((input) => {
+    input.max = today;
+  });
 }
 
 function ensureHoursFieldOut() {
@@ -165,6 +182,13 @@ function validateTeacher() {
   if (!data.teacherId) errs.push("請填寫教師編號。");
   const slotErr = validateTimeSlots(data.timeSlots);
   if (slotErr) errs.push(slotErr);
+  const today = getTodayIsoLocal();
+  const hasFutureDate = data.timeSlots.some(
+    (slot) =>
+      (slot.startDate && slot.startDate > today) ||
+      (slot.endDate && slot.endDate > today)
+  );
+  if (hasFutureDate) errs.push("活動日期不可晚於今天。");
   if (!data.courseTitle) errs.push("請填寫活動名稱。");
   if (!data.organizer) errs.push("請填寫舉辦單位。");
   if (!data.relevance) errs.push("請填寫教學專業成長。");
@@ -204,6 +228,7 @@ timeSlotsOut?.addEventListener("click", (e) => {
   if (!timeSlotsOut.querySelector(".time-slot-row")) {
     timeSlotsOut.appendChild(createTimeSlotRow());
   }
+  applyDateMaxOut();
   refreshTimeSlotRemoveState();
   updateHoursOut();
 });
@@ -211,6 +236,7 @@ timeSlotsOut?.addEventListener("click", (e) => {
 btnAddTimeSlotOut?.addEventListener("click", () => {
   if (!timeSlotsOut) return;
   timeSlotsOut.appendChild(createTimeSlotRow());
+  applyDateMaxOut();
   refreshTimeSlotRemoveState();
 });
 
@@ -318,5 +344,6 @@ document.addEventListener("DOMContentLoaded", () => {
   ensureTimeSlotsOut();
   ensureHoursFieldOut();
   refreshTimeSlotRemoveState();
+  applyDateMaxOut();
   updateHoursOut();
 });

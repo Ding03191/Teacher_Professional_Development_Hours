@@ -3,10 +3,13 @@
 const loginPanel = document.getElementById("loginPanel");
 const loginForm = document.getElementById("loginForm");
 const loginMsg = document.getElementById("loginMsg");
+const googleSigninContainer = document.getElementById("googleSigninContainer");
 const topbarUser = document.querySelector(".topbar-user");
 const topbarAccount = document.getElementById("topbarAccount");
 const topbarLoginLink = document.getElementById("topbarLoginLink");
 const logoutBtnTop = document.getElementById("btnLogoutTop");
+let googleClientId = "";
+let googleHostedDomain = "";
 
 function setAvatar(user) {
   if (!topbarUser || !user) return;
@@ -62,6 +65,74 @@ async function checkMe() {
   }
 }
 
+async function loadGoogleConfig() {
+  try {
+    const data = await api("/api/auth/google/config");
+    googleClientId = data.data?.clientId || "";
+    googleHostedDomain = data.data?.hostedDomain || "";
+    return Boolean(data.data?.enabled && googleClientId);
+  } catch {
+    return false;
+  }
+}
+
+async function onGoogleCredentialResponse(response) {
+  if (!response?.credential) {
+    loginMsg.textContent = "Google 登入失敗，請再試一次";
+    return;
+  }
+  loginMsg.textContent = "";
+  try {
+    const data = await api("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ credential: response.credential }),
+    });
+    gotoRoleHome(data.data?.user);
+  } catch (err) {
+    loginMsg.textContent = err.message;
+  }
+}
+
+async function waitForGoogleGsi(timeoutMs = 5000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (window.google?.accounts?.id) return true;
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  }
+  return false;
+}
+
+async function initGoogleLogin() {
+  if (!googleSigninContainer) return;
+  const enabled = await loadGoogleConfig();
+  const gsiReady = await waitForGoogleGsi();
+  if (!enabled || !gsiReady) {
+    googleSigninContainer.textContent = "Google 登入尚未設定";
+    return;
+  }
+
+  window.google.accounts.id.initialize({
+    client_id: googleClientId,
+    callback: onGoogleCredentialResponse,
+    auto_select: false,
+    cancel_on_tap_outside: true,
+    hd: googleHostedDomain || undefined,
+  });
+
+  googleSigninContainer.innerHTML = "";
+  const width = Math.min(384, Math.max(260, Math.floor(googleSigninContainer.clientWidth || 360)));
+  window.google.accounts.id.renderButton(googleSigninContainer, {
+    type: "standard",
+    theme: "outline",
+    size: "large",
+    text: "continue_with",
+    shape: "pill",
+    width,
+    logo_alignment: "left",
+    locale: "zh-TW",
+  });
+}
+
 loginForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   loginMsg.textContent = "";
@@ -83,6 +154,9 @@ loginForm?.addEventListener("submit", async (e) => {
 
 logoutBtnTop?.addEventListener("click", async () => {
   try {
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.disableAutoSelect();
+    }
     await api("/api/auth/logout", { method: "POST" });
   } finally {
     window.location.href = "admin";
@@ -90,6 +164,7 @@ logoutBtnTop?.addEventListener("click", async () => {
 });
 
 document.addEventListener("DOMContentLoaded", checkMe);
+document.addEventListener("DOMContentLoaded", initGoogleLogin);
 
 function initPasswordToggle() {
   const btn = document.querySelector('[data-toggle="password"]');

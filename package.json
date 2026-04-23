@@ -4,8 +4,10 @@
   "private": true,
   "description": "Local development scripts for backend and frontend",
   "scripts": {
-    "dev": "concurrently -k -n BACKEND,FRONTEND -c green,cyan \"npm:dev:backend\" \"npm:dev:frontend\"",
-    "start": "npm run dev",
+    "dev": "npm run dev:frontend",
+    "start": "npm run dev:frontend",
+    "dev:all": "concurrently -k -n BACKEND,FRONTEND -c green,cyan \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "start:all": "npm run dev:all",
     "setup:backend": "python -m pip install -r backEnd/requirements.txt",
     "dev:backend": "dotenv -e .env -- python backEnd/app.py",
     "dev:frontend": "node scripts/dev-frontend-server.js"

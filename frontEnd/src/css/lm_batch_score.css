@@ -1,0 +1,135 @@
+:root {
+  --bg: #f6f3ef;
+  --surface: #ffffff;
+  --ink: #1a1a1a;
+  --muted: #6b7280;
+  --brand: #1d4ed8;
+  --line: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at top, #fff8ef 0%, #f5f1ec 40%, #efe9e2 100%);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 28px auto 64px;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+}
+
+.card-hd {
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.lbl {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+input {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.msg {
+  min-height: 20px;
+  margin-top: 10px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table .score-high {
+  color: #166534;
+  font-weight: 700;
+}
+
+.table .score-mid {
+  color: #92400e;
+  font-weight: 700;
+}
+
+.table .score-low {
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.summary-cell {
+  max-width: 380px;
+  white-space: normal;
+}
+
+@media (max-width: 980px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+}

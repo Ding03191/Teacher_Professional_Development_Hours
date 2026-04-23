@@ -4,32 +4,36 @@ const topbarUser = document.querySelector(".topbar-user");
 const logoutBtn = document.getElementById("btnLogoutTop");
 const topbarLoginLink = document.getElementById("topbarLoginLink");
 const topbarAccount = document.getElementById("topbarAccount");
+const AUTH_CACHE_KEY = "__auth_user_cache_v1";
 
 function ensureRootSidebarLinks() {
   const nav = document.querySelector(".sidebar-nav");
   if (!(nav instanceof HTMLElement)) return;
 
-  const ensureLink = (href, text) => {
+  const links = [
+    { href: "review", text: "時數審核" },
+    { href: "lm_batch_score", text: "相關度評分" },
+    { href: "user_management", text: "使用者管理" },
+  ];
+
+  const currentPage = window.location.pathname.split("/").pop();
+  const rootNodes = [];
+
+  links.forEach(({ href, text }) => {
     let link = nav.querySelector(`a[href="${href}"]`);
     if (!(link instanceof HTMLAnchorElement)) {
       link = document.createElement("a");
       link.href = href;
-      link.textContent = text;
-      link.className = "nav-link root-only";
-      link.setAttribute("data-role", "root");
-      nav.appendChild(link);
-    } else {
-      link.classList.add("nav-link", "root-only");
-      link.setAttribute("data-role", "root");
-      link.textContent = text;
     }
+    link.textContent = text;
+    link.classList.add("nav-link", "root-only");
+    link.setAttribute("data-role", "root");
+    link.classList.toggle("active", currentPage === href || currentPage === `${href}.html`);
+    rootNodes.push(link);
+  });
 
-    const currentPage = window.location.pathname.split("/").pop();
-    link.classList.toggle("active", currentPage === href);
-  };
-
-  ensureLink("review", "時數審核");
-  ensureLink("user_management", "使用者管理");
+  // Keep root-only links in a deterministic order on every page.
+  rootNodes.forEach((node) => nav.appendChild(node));
 }
 
 function getTopbarLinks() {
@@ -46,6 +50,29 @@ function getTopbarLinks() {
   }
 
   return { login };
+}
+
+function readCachedUser() {
+  try {
+    const raw = sessionStorage.getItem(AUTH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedUser(user) {
+  try {
+    if (!user) {
+      sessionStorage.removeItem(AUTH_CACHE_KEY);
+      return;
+    }
+    sessionStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(user));
+  } catch {
+    // noop
+  }
 }
 
 
@@ -71,6 +98,24 @@ function setAvatar(user) {
   topbarUser.textContent = label;
 }
 
+function applyAuthenticatedUI(user) {
+  if (!user) return;
+  window.__authUser = user;
+  setAvatar(user);
+  document.body.classList.toggle("is-root", user?.role === "root");
+  if (user?.role === "root") ensureRootSidebarLinks();
+  document.querySelectorAll("[data-role='root']").forEach((el) => {
+    if (user?.role !== "root") {
+      el.classList.add("is-hidden");
+    } else {
+      el.classList.remove("is-hidden");
+    }
+  });
+  const { login } = getTopbarLinks();
+  login?.classList.add("is-hidden");
+  if (logoutBtn) logoutBtn.classList.remove("is-hidden");
+}
+
 async function fetchMe() {
   const res = await fetch(`${window.API_BASE}/api/auth/me`, {
     credentials: "include",
@@ -83,24 +128,22 @@ async function fetchMe() {
 }
 
 async function guard() {
+  // Optimistic paint from cache to avoid root menu flicker on slow /me.
+  const cachedUser = readCachedUser();
+  if (cachedUser) {
+    applyAuthenticatedUI(cachedUser);
+  }
+
   try {
     const user = await fetchMe();
-    window.__authUser = user;
-    setAvatar(user);
-    document.body.classList.toggle("is-root", user?.role === "root");
-    if (user?.role === "root") ensureRootSidebarLinks();
-    document.querySelectorAll("[data-role='root']").forEach((el) => {
-      if (user?.role !== "root") {
-        el.classList.add("is-hidden");
-      } else {
-        el.classList.remove("is-hidden");
-      }
-    });
-    const { login } = getTopbarLinks();
-    login?.classList.add("is-hidden");
+    applyAuthenticatedUI(user);
+    writeCachedUser(user);
     if (logoutBtn) {
-      logoutBtn.classList.remove("is-hidden");
       logoutBtn.addEventListener("click", async () => {
+        if (window.google?.accounts?.id) {
+          window.google.accounts.id.disableAutoSelect();
+        }
+        writeCachedUser(null);
         await fetch(`${window.API_BASE}/api/auth/logout`, {
           method: "POST",
           credentials: "include",
@@ -110,6 +153,7 @@ async function guard() {
     }
     return user;
   } catch (err) {
+    writeCachedUser(null);
     if (logoutBtn) logoutBtn.classList.add("is-hidden");
     const { login } = getTopbarLinks();
     login?.classList.remove("is-hidden");

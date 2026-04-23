@@ -11,6 +11,7 @@ from .api.teacher import teacher_bp
 from .api.applications import applications_bp
 from .api.departments import departments_bp
 from .api.admin import admin_bp
+from .api.lmstudio import lmstudio_bp
 
 
 def create_app():
@@ -49,6 +50,7 @@ def create_app():
     app.register_blueprint(departments_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(applications_bp)
+    app.register_blueprint(lmstudio_bp)
 
     logging.getLogger(__name__).info("DB in use: %s", db.DB_NAME)
     return app

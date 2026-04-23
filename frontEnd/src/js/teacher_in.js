@@ -176,11 +176,12 @@ function initMultiSelect(container) {
 }
 
 function createTimeSlotRow(slot = {}) {
+  const today = getTodayIsoLocal();
   const row = document.createElement("div");
   row.className = "time-slot-row";
   row.innerHTML = `
-    <input type="date" class="slot-date-start" value="${slot.startDate || slot.slotDate || ""}" required>
-    <input type="date" class="slot-date-end" value="${slot.endDate || slot.slotEndDate || slot.slotDate || ""}" required>
+    <input type="date" class="slot-date-start" value="${slot.startDate || slot.slotDate || ""}" max="${today}" required>
+    <input type="date" class="slot-date-end" value="${slot.endDate || slot.slotEndDate || slot.slotDate || ""}" max="${today}" required>
     <input type="time" class="slot-start" value="${slot.startTime || ""}" required>
     <span class="time-slot-sep">～</span>
     <input type="time" class="slot-end" value="${slot.endTime || ""}" required>
@@ -215,6 +216,14 @@ function readTimeSlotsIn() {
     startTime: row.querySelector(".slot-start")?.value?.trim() || "",
     endTime: row.querySelector(".slot-end")?.value?.trim() || "",
   }));
+}
+
+function applyDateMaxIn() {
+  if (!timeSlotsIn) return;
+  const today = getTodayIsoLocal();
+  timeSlotsIn.querySelectorAll(".slot-date-start, .slot-date-end").forEach((input) => {
+    input.max = today;
+  });
 }
 
 function ensureHoursFieldIn() {
@@ -418,6 +427,7 @@ timeSlotsIn?.addEventListener("click", (event) => {
   if (!timeSlotsIn.querySelector(".time-slot-row")) {
     timeSlotsIn.appendChild(createTimeSlotRow());
   }
+  applyDateMaxIn();
   refreshTimeSlotRemoveStateIn();
   updateHoursIn();
 });
@@ -425,6 +435,7 @@ timeSlotsIn?.addEventListener("click", (event) => {
 btnAddTimeSlotIn?.addEventListener("click", () => {
   if (!timeSlotsIn) return;
   timeSlotsIn.appendChild(createTimeSlotRow());
+  applyDateMaxIn();
   refreshTimeSlotRemoveStateIn();
 });
 
@@ -450,6 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ensureTimeSlotsIn();
   ensureHoursFieldIn();
   refreshTimeSlotRemoveStateIn();
+  applyDateMaxIn();
   updateHoursIn();
   renderPreview();
 });

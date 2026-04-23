@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../src/css/layout.css">
+  <title>相關度批次評分</title>
+  <link rel="stylesheet" href="../src/css/lm_batch_score.css" />
+</head>
+<body>
+  <div class="layout">
+    <header class="layout-topbar">
+      <div class="layout-title">國立勤益科技大學教師成長時數平台</div>
+      <div class="topbar-actions">
+        <span class="topbar-user" aria-hidden="true">管</span>
+        <span id="topbarAccount" class="topbar-account"></span>
+        <a id="topbarLoginLink" class="topbar-link" href="admin">登入</a>
+        <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
+      </div>
+    </header>
+    <aside class="layout-sidebar">
+      <nav class="sidebar-nav">
+        <a class="nav-link" href="teacher_in">校內申請</a>
+        <a class="nav-link" href="teacher">校外申請</a>
+        <a class="nav-link" href="history">歷史紀錄</a>
+        <a class="nav-link root-only" data-role="root" href="review">時數審核</a>
+        <a class="nav-link active root-only" data-role="root" href="lm_batch_score">相關度評分</a>
+        <a class="nav-link root-only" data-role="root" href="user_management">使用者管理</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="lang-btn" type="button">繁體中文</button>
+      </div>
+    </aside>
+    <div class="layout-main">
+      <main class="container">
+        <section class="card">
+          <div class="card-hd">相關度批次評分（每週一）</div>
+          <div class="toolbar">
+            <label class="field">
+              <span class="lbl">批次週一</span>
+              <input id="weekMonday" type="date">
+            </label>
+            <label class="field">
+              <span class="lbl">LM Studio Base URL</span>
+              <input id="lmBaseUrl" type="text" value="http://127.0.0.1:1234/v1">
+            </label>
+            <label class="field">
+              <span class="lbl">Model</span>
+              <input id="lmModel" type="text" value="local-model">
+            </label>
+          </div>
+          <div class="actions">
+            <button id="btnSetCurrentMonday" class="btn" type="button">設為本週一</button>
+            <button id="btnLoadBatch" class="btn" type="button">載入本週資料</button>
+            <button id="btnSelectAll" class="btn" type="button">全選可評分</button>
+            <button id="btnRunScore" class="btn primary" type="button">執行批次評分</button>
+            <button id="btnWriteBack" class="btn" type="button">回寫審核備註</button>
+            <button id="btnExportCsv" class="btn" type="button">匯出 CSV</button>
+          </div>
+          <div id="scoreMsg" class="msg"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-hd">待評分清單</div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>選取</th>
+                  <th>ID</th>
+                  <th>建立時間</th>
+                  <th>類型</th>
+                  <th>單位</th>
+                  <th>活動名稱</th>
+                  <th>摘要</th>
+                  <th>分數</th>
+                  <th>結果</th>
+                </tr>
+              </thead>
+              <tbody id="scoreTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../src/js/auth_guard.js" defer></script>
+  <script src="../src/js/lm_batch_score.js" defer></script>
+</body>
+</html>

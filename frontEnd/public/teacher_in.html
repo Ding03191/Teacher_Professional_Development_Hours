@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../src/css/layout.css">
   <title>教師成長活動時數認證申請表（校內活動）</title>
-  <link rel="stylesheet" href="../src/css/teacher_in.css">
+  <link rel="stylesheet" href="../src/css/teacher_in.css?v=20260427-2">
 </head>
 <body>
   <div class="layout">
@@ -100,6 +100,11 @@
                     <input id="eventTimeEndIn" type="time" class="slot-end" required>
                   </div>
                 </div>
+
+                <label class="field">
+                  <span class="lbl">活動時數（自動計算，最多 4 小時）</span>
+                  <input name="hours" id="hoursIn" type="text" readonly placeholder="1~4 小時">
+                </label>
 
 
 
@@ -258,6 +263,6 @@
   </div>
   <!-- 之後如果要做 PDF 匯出，也可以跟校外活動一樣接 html2pdf -->
   <script src="../src/js/auth_guard.js" defer></script>
-  <script src="../src/js/teacher_in.js" defer></script>
+  <script src="../src/js/teacher_in.js?v=20260427-2" defer></script>
 </body>
 </html>

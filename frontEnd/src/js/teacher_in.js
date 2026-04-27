@@ -11,7 +11,18 @@ const fileListIn = document.getElementById("fileListIn");
 const sampleExcelLinkIn = document.getElementById("sampleExcelLinkIn");
 const timeSlotsIn = document.getElementById("timeSlotsIn");
 const btnAddTimeSlotIn = document.getElementById("btnAddTimeSlotIn");
+const eventDateStartIn = document.getElementById("eventDateStartIn");
+const eventDateEndIn = document.getElementById("eventDateEndIn");
+const eventTimeStartIn = document.getElementById("eventTimeStartIn");
+const eventTimeEndIn = document.getElementById("eventTimeEndIn");
 let hoursInputIn = null;
+
+function createHoursFieldHtml() {
+  return `
+    <span class="lbl">活動時數（自動計算，最多 4 小時）</span>
+    <input name="hours" id="hoursIn" type="text" readonly placeholder="1~4 小時">
+  `;
+}
 
 function getTodayIsoLocal() {
   const now = new Date();
@@ -209,33 +220,82 @@ function refreshTimeSlotRemoveStateIn() {
 }
 
 function readTimeSlotsIn() {
-  if (!timeSlotsIn) return [];
-  return Array.from(timeSlotsIn.querySelectorAll(".time-slot-row")).map((row) => ({
+  const fallbackStartDate =
+    formIn?.querySelector(".time-fixed-row .slot-date-start")?.value?.trim() ||
+    formIn?.querySelector(".slot-date-start")?.value?.trim() ||
+    "";
+  const fallbackEndDate =
+    formIn?.querySelector(".time-fixed-row .slot-date-end")?.value?.trim() ||
+    formIn?.querySelector(".slot-date-end")?.value?.trim() ||
+    "";
+  const fallbackStartTime =
+    formIn?.querySelector(".time-fixed-row .slot-start")?.value?.trim() ||
+    formIn?.querySelector(".slot-start")?.value?.trim() ||
+    "";
+  const fallbackEndTime =
+    formIn?.querySelector(".time-fixed-row .slot-end")?.value?.trim() ||
+    formIn?.querySelector(".slot-end")?.value?.trim() ||
+    "";
+
+  const fixedSlot = {
+    startDate: eventDateStartIn?.value?.trim() || fallbackStartDate,
+    endDate: eventDateEndIn?.value?.trim() || fallbackEndDate,
+    startTime: eventTimeStartIn?.value?.trim() || fallbackStartTime,
+    endTime: eventTimeEndIn?.value?.trim() || fallbackEndTime,
+  };
+
+  if (!timeSlotsIn) {
+    if (!fixedSlot.startDate && !fixedSlot.endDate && !fixedSlot.startTime && !fixedSlot.endTime) return [];
+    return [fixedSlot];
+  }
+
+  const rows = Array.from(timeSlotsIn.querySelectorAll(".time-slot-row")).map((row) => ({
     startDate: row.querySelector(".slot-date-start")?.value?.trim() || "",
     endDate: row.querySelector(".slot-date-end")?.value?.trim() || "",
     startTime: row.querySelector(".slot-start")?.value?.trim() || "",
     endTime: row.querySelector(".slot-end")?.value?.trim() || "",
   }));
+
+  // 若時段容器存在但沒有任何列，回退使用固定欄位組成 1 筆時段
+  if (rows.length === 0) {
+    if (!fixedSlot.startDate && !fixedSlot.endDate && !fixedSlot.startTime && !fixedSlot.endTime) return [];
+    return [fixedSlot];
+  }
+
+  return rows;
 }
 
 function applyDateMaxIn() {
-  if (!timeSlotsIn) return;
   const today = getTodayIsoLocal();
-  timeSlotsIn.querySelectorAll(".slot-date-start, .slot-date-end").forEach((input) => {
+  if (timeSlotsIn) {
+    timeSlotsIn.querySelectorAll(".slot-date-start, .slot-date-end").forEach((input) => {
+      input.max = today;
+    });
+    return;
+  }
+  if (eventDateStartIn) eventDateStartIn.max = today;
+  if (eventDateEndIn) eventDateEndIn.max = today;
+  formIn?.querySelectorAll(".time-fixed-row .slot-date-start, .time-fixed-row .slot-date-end").forEach((input) => {
     input.max = today;
   });
 }
 
 function ensureHoursFieldIn() {
-  if (!formIn || hoursInputIn) return;
-  const timeField = timeSlotsIn?.closest(".field");
+  if (hoursInputIn) return;
+  const existing = document.getElementById("hoursIn");
+  if (existing instanceof HTMLInputElement) {
+    hoursInputIn = existing;
+    return;
+  }
+  if (!formIn) return;
+  const timeField =
+    eventTimeStartIn?.closest(".field") ||
+    eventTimeEndIn?.closest(".field") ||
+    timeSlotsIn?.closest(".field");
   if (!timeField || !timeField.parentElement) return;
   const wrapper = document.createElement("label");
   wrapper.className = "field";
-  wrapper.innerHTML = `
-    <span class="lbl">活動時數（自動計算，最多4小時）</span>
-    <input name="hours" id="hoursIn" type="text" readonly placeholder="1~4 小時">
-  `;
+  wrapper.innerHTML = createHoursFieldHtml();
   timeField.parentElement.insertBefore(wrapper, timeField.nextSibling);
   hoursInputIn = wrapper.querySelector("input");
 }
@@ -417,6 +477,27 @@ timeSlotsIn?.addEventListener("input", (event) => {
   }
 });
 
+[eventDateStartIn, eventDateEndIn, eventTimeStartIn, eventTimeEndIn]
+  .filter(Boolean)
+  .forEach((input) => {
+    input.addEventListener("input", () => updateHoursIn());
+    input.addEventListener("change", () => updateHoursIn());
+  });
+
+// 保底：即使 id 綁定不到，也用 class 監聽固定日期/時間欄位
+formIn?.addEventListener("input", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (
+    target.classList.contains("slot-date-start") ||
+    target.classList.contains("slot-date-end") ||
+    target.classList.contains("slot-start") ||
+    target.classList.contains("slot-end")
+  ) {
+    updateHoursIn();
+  }
+});
+
 timeSlotsIn?.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
@@ -450,18 +531,21 @@ filesInputIn?.addEventListener("change", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  initMultiSelect(domainWrap);
-  initMultiSelect(sdgWrap);
+  // ?????????????????????????
+  try { ensureHoursFieldIn(); } catch (_) {}
+
+  try { initMultiSelect(domainWrap); } catch (_) {}
+  try { initMultiSelect(sdgWrap); } catch (_) {}
 
   if (sampleExcelLinkIn) {
     sampleExcelLinkIn.href = "./ex.csv";
     sampleExcelLinkIn.addEventListener("click", handleSampleTemplateDownload);
   }
 
-  ensureTimeSlotsIn();
-  ensureHoursFieldIn();
-  refreshTimeSlotRemoveStateIn();
-  applyDateMaxIn();
-  updateHoursIn();
-  renderPreview();
+  try { ensureTimeSlotsIn(); } catch (_) {}
+  try { ensureHoursFieldIn(); } catch (_) {}
+  try { refreshTimeSlotRemoveStateIn(); } catch (_) {}
+  try { applyDateMaxIn(); } catch (_) {}
+  try { updateHoursIn(); } catch (_) {}
+  try { renderPreview(); } catch (_) {}
 });

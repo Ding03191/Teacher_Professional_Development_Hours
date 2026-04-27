@@ -478,18 +478,56 @@ select {
 }
 
 .login-submit {
+  position: relative;
   height: 48px;
   border: none;
-  background: linear-gradient(90deg, #2563eb, #7c3aed);
+  background: linear-gradient(110deg, #2563eb, #4f46e5, #7c3aed);
+  background-size: 180% 180%;
   color: #fff;
   font-weight: 600;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.28);
+  transition: transform 0.16s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  overflow: hidden;
+  isolation: isolate;
+  animation: loginGlow 4.8s ease-in-out infinite;
+}
+
+.login-submit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%) skewX(-20deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.22) 40%,
+    transparent 75%
+  );
+  transition: transform 0.55s ease;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .login-submit:hover {
-  filter: brightness(1.02);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.34);
+  filter: saturate(1.08);
+}
+
+.login-submit:hover::after {
+  transform: translateX(120%) skewX(-20deg);
+}
+
+.login-submit:active {
+  transform: translateY(0) scale(0.985);
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.28);
+}
+
+.login-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.5), 0 12px 24px rgba(59, 130, 246, 0.28);
 }
 
 .login-divider {
@@ -540,6 +578,43 @@ select {
 .google-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+
+@keyframes loginGlow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.google-signin-slot {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 999px;
+  transition: transform 0.16s ease, box-shadow 0.2s ease;
+  transform-origin: center;
+}
+
+.google-signin-slot > div {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.google-signin-slot:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.google-signin-slot:focus-within {
+  transform: scale(0.985);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
 }
 
 @keyframes blobFloat {

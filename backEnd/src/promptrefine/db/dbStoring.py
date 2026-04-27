@@ -18,6 +18,7 @@ LABEL_TABLE_NAME = "history_labels"
 DEPT_TABLE_NAME = "departments"
 APP_TABLE_NAME = "applications"
 APP_TIME_SLOT_TABLE_NAME = "application_time_slots"
+APP_STATUS_HISTORY_TABLE_NAME = "application_status_history"
 
 
 def _ensure_db_path():
@@ -151,6 +152,62 @@ def _fetch_time_slots_map(cursor, app_ids: list[int]):
     return out
 
 
+def _append_application_status_history(
+    cursor,
+    app_id: int,
+    from_status: str | None,
+    to_status: str,
+    actor: str | None,
+    reason: str | None,
+    action: str | None = None,
+):
+    cursor.execute(
+        f"""
+        INSERT INTO {APP_STATUS_HISTORY_TABLE_NAME}
+            (application_id, from_status, to_status, action, reason, actor, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+        """,
+        (
+            app_id,
+            (from_status or "").strip() or None,
+            (to_status or "").strip(),
+            (action or "").strip() or None,
+            (reason or "").strip() or None,
+            (actor or "").strip() or None,
+        ),
+    )
+
+
+def _fetch_status_history_map(cursor, app_ids: list[int]):
+    if not app_ids:
+        return {}
+    placeholders = ",".join("?" for _ in app_ids)
+    cursor.execute(
+        f"""
+        SELECT id, application_id, from_status, to_status, action, reason, actor, created_at
+        FROM {APP_STATUS_HISTORY_TABLE_NAME}
+        WHERE application_id IN ({placeholders})
+        ORDER BY application_id, id ASC
+        """,
+        app_ids,
+    )
+    out = {}
+    for row in cursor.fetchall():
+        app_id = row["application_id"]
+        out.setdefault(app_id, []).append(
+            {
+                "id": row["id"],
+                "from_status": row["from_status"],
+                "to_status": row["to_status"],
+                "action": row["action"],
+                "reason": row["reason"],
+                "actor": row["actor"],
+                "created_at": row["created_at"],
+            }
+        )
+    return out
+
+
 # 1. Create the table if it doesn't exist
 def init_db():
     conn = _connect()
@@ -231,6 +288,21 @@ def init_db():
         )
         """
     )
+    c.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {APP_STATUS_HISTORY_TABLE_NAME} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            application_id INTEGER NOT NULL,
+            from_status TEXT,
+            to_status TEXT NOT NULL,
+            action TEXT,
+            reason TEXT,
+            actor TEXT,
+            created_at DATETIME DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (application_id) REFERENCES {APP_TABLE_NAME}(id) ON DELETE CASCADE
+        )
+        """
+    )
     conn.commit()
 
     # Backward-compatible schema migration: add columns if old DB already exists.
@@ -269,6 +341,50 @@ def init_db():
             continue
         _replace_application_time_slots(conn.cursor(), app_id, slots)
 
+    # Backfill status history for existing applications.
+    app_status_rows = conn.execute(
+        f"SELECT id, status, account, reviewed_by, review_comment, reviewed_at, created_at FROM {APP_TABLE_NAME}"
+    ).fetchall()
+    for row in app_status_rows:
+        app_id = row["id"]
+        exists = conn.execute(
+            f"SELECT 1 FROM {APP_STATUS_HISTORY_TABLE_NAME} WHERE application_id = ? LIMIT 1",
+            (app_id,),
+        ).fetchone()
+        if exists:
+            continue
+
+        created_actor = (row["account"] or "").strip() or "system"
+        pending_created_at = row["created_at"]
+        conn.execute(
+            f"""
+            INSERT INTO {APP_STATUS_HISTORY_TABLE_NAME}
+                (application_id, from_status, to_status, action, reason, actor, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (app_id, None, "pending", "create", None, created_actor, pending_created_at),
+        )
+        final_status = (row["status"] or "pending").strip().lower()
+        if final_status != "pending":
+            review_actor = (row["reviewed_by"] or "").strip() or "system"
+            review_created_at = row["reviewed_at"] or pending_created_at
+            conn.execute(
+                f"""
+                INSERT INTO {APP_STATUS_HISTORY_TABLE_NAME}
+                    (application_id, from_status, to_status, action, reason, actor, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    app_id,
+                    "pending",
+                    final_status,
+                    "review",
+                    row["review_comment"],
+                    review_actor,
+                    review_created_at,
+                ),
+            )
+
     conn.commit()
     conn.close()
 
@@ -303,6 +419,15 @@ def insert_application(
     app_id = c.lastrowid
     normalized_slots = _normalize_time_slots(time_slots, data)
     _replace_application_time_slots(c, app_id, normalized_slots)
+    _append_application_status_history(
+        c,
+        app_id=app_id,
+        from_status=None,
+        to_status="pending",
+        actor=account,
+        reason=None,
+        action="create",
+    )
     conn.commit()
     conn.close()
     return app_id
@@ -334,6 +459,7 @@ def list_applications(app_type: str | None = None, unit_name: str | None = None,
     rows = c.fetchall()
     app_ids = [row["id"] for row in rows]
     slots_map = _fetch_time_slots_map(c, app_ids)
+    status_history_map = _fetch_status_history_map(c, app_ids)
     records = []
     for row in rows:
         slots = slots_map.get(row["id"], [])
@@ -365,6 +491,7 @@ def list_applications(app_type: str | None = None, unit_name: str | None = None,
                 "review_comment": row["review_comment"],
                 "reviewed_by": row["reviewed_by"],
                 "reviewed_at": row["reviewed_at"],
+                "status_history": status_history_map.get(row["id"], []),
                 "created_at": row["created_at"],
             }
         )
@@ -390,6 +517,7 @@ def get_application(app_id: int):
         conn.close()
         return None
     slots = _fetch_time_slots_map(c, [app_id]).get(app_id, [])
+    status_history = _fetch_status_history_map(c, [app_id]).get(app_id, [])
     data = json.loads(row["data_json"] or "{}")
     data["timeSlots"] = [
         {
@@ -418,6 +546,7 @@ def get_application(app_id: int):
         "review_comment": row["review_comment"],
         "reviewed_by": row["reviewed_by"],
         "reviewed_at": row["reviewed_at"],
+        "status_history": status_history,
         "created_at": row["created_at"],
     }
 
@@ -432,9 +561,11 @@ def update_application(
     record = get_application(app_id)
     if record:
         existing = record.get("data") or {}
-        if existing.get("attachments_files") and not data.get("attachments_files"):
+        # Preserve only when caller didn't provide these keys at all.
+        # If caller explicitly sets [] (e.g., delete last attachment), keep [].
+        if existing.get("attachments_files") and ("attachments_files" not in data):
             data["attachments_files"] = existing.get("attachments_files")
-        if existing.get("attachments") and not data.get("attachments"):
+        if existing.get("attachments") and ("attachments" not in data):
             data["attachments"] = existing.get("attachments")
     conn = _connect()
     c = conn.cursor()
@@ -461,6 +592,7 @@ def update_application(
 
 def update_application_review(
     app_id: int,
+    from_status: str | None,
     status: str,
     approved_hours: float | None,
     reviewer: str | None,
@@ -476,6 +608,46 @@ def update_application_review(
         WHERE id = ?
         """,
         (status, approved_hours, review_comment, reviewer, reviewed_at, app_id),
+    )
+    _append_application_status_history(
+        c,
+        app_id=app_id,
+        from_status=from_status,
+        to_status=status,
+        actor=reviewer,
+        reason=review_comment,
+        action="review",
+    )
+    conn.commit()
+    conn.close()
+
+
+def transition_application_status(
+    app_id: int,
+    from_status: str | None,
+    to_status: str,
+    actor: str | None,
+    reason: str | None,
+    action: str | None,
+):
+    conn = _connect()
+    c = conn.cursor()
+    c.execute(
+        f"""
+        UPDATE {APP_TABLE_NAME}
+        SET status = ?
+        WHERE id = ?
+        """,
+        (to_status, app_id),
+    )
+    _append_application_status_history(
+        c,
+        app_id=app_id,
+        from_status=from_status,
+        to_status=to_status,
+        actor=actor,
+        reason=reason,
+        action=action,
     )
     conn.commit()
     conn.close()
@@ -497,6 +669,30 @@ def add_application_files(app_id: int, files_info: list[dict]):
             "organizer": record.get("organizer"),
         },
     )
+
+
+def delete_application_file(app_id: int, file_index: int):
+    record = get_application(app_id)
+    if not record:
+        return None
+    data = record.get("data") or {}
+    files = data.get("attachments_files") or []
+    if file_index < 0 or file_index >= len(files):
+        return None
+    removed = files.pop(file_index)
+    data["attachments_files"] = files
+    data["attachments"] = [f.get("name") for f in files if f.get("name")]
+    data["attachmentCount"] = len(files)
+    update_application(
+        app_id,
+        data,
+        {
+            "event_name": record.get("event_name"),
+            "event_date": record.get("event_date"),
+            "organizer": record.get("organizer"),
+        },
+    )
+    return removed
 
 
 def delete_application(app_id: int):

@@ -29,6 +29,22 @@ IMAGE_EXT_TO_MIME = {
     ".bmp": "image/bmp",
 }
 
+STATUS_ALIAS = {
+    "pending": "pending",
+    "approved": "approved",
+    "rejected": "rejected",
+    "待審核": "pending",
+    "通过": "approved",
+    "通過": "approved",
+    "退件": "rejected",
+}
+
+ALLOWED_REVIEW_TRANSITIONS = {
+    "pending": {"approved", "rejected", "pending"},
+    "approved": {"approved", "rejected"},
+    "rejected": {"rejected"},
+}
+
 
 def _ok(data=None, **kw):
     resp = {"ok": True}
@@ -149,6 +165,11 @@ def _has_future_dates(time_slots: list):
     return False
 
 
+def _normalize_status(raw_status):
+    key = str(raw_status or "pending").strip().lower()
+    return STATUS_ALIAS.get(key, STATUS_ALIAS.get(str(raw_status or "").strip(), key))
+
+
 def _inject_time_slots_into_data(data: dict, time_slots: list):
     data["timeSlots"] = [
         {
@@ -169,77 +190,28 @@ def _build_form_pdf(record):
         font_name = "MSung-Light"
     except Exception:
         font_name = "Helvetica"
+
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    _, height = A4
     y = height - 40
-    c.setFont(font_name, 14)
-    title = f"申請紀錄（{'校內' if record['app_type']=='in' else '校外'}）"
-    c.drawString(40, y, title)
-    y -= 22
-    c.setFont(font_name, 10)
-    c.drawString(40, y, f"申請單位：{record.get('unit_name','')}")
-    y -= 16
-    c.drawString(40, y, f"申請日期：{record.get('event_date','')}")
-    y -= 20
 
     data = record.get("data") or {}
-    if record.get("app_type") == "in":
-        fields = [
-            ("主辦單位", data.get("organizerDept")),
-            ("活動名稱", data.get("eventName")),
-            ("主(承)辦人員", data.get("hostName")),
-            ("聯絡電話（校內分機）", data.get("ext")),
-            ("活動地點", data.get("location")),
-            ("活動日期", data.get("eventDate")),
-            (
-                "活動時間",
-                "；".join(
-                    [
-                        f"{(slot.get('slot_date') or '').strip()} {slot.get('start_time','')}～{slot.get('end_time','')}".strip()
-                        for slot in (record.get("time_slots") or [])
-                    ]
-                )
-                or f"{data.get('startTime','')} ～ {data.get('endTime','')}",
-            ),
-            ("是否核發研習證書", "是" if data.get("hasCert") == "yes" else "否"),
-            ("證書字號", data.get("certNo")),
-            ("鏈結領域", "、".join(data.get("domain") or [])),
-            ("其他鏈結領域", data.get("domainOther")),
-            ("對接 SDGs 指標", "、".join(data.get("sdg") or [])),
-            ("一、活動主旨", data.get("purpose")),
-            ("二、詳細活動內容", data.get("content")),
-            ("三、教學專業關係", data.get("teachingRelation")),
-            ("四、研究專業關係", data.get("researchRelation")),
-            ("附件清單", "、".join(data.get("attachments") or [])),
-        ]
-    else:
-        fields = [
-            ("教師姓名", data.get("teacherName")),
-            ("任教單位", data.get("department")),
-            ("教師編號", data.get("teacherId")),
-            ("聯絡分機", data.get("ext")),
-            ("活動日期", data.get("eventDate")),
-            (
-                "活動時間",
-                "；".join(
-                    [
-                        f"{(slot.get('slot_date') or '').strip()} {slot.get('start_time','')}～{slot.get('end_time','')}".strip()
-                        for slot in (record.get("time_slots") or [])
-                    ]
-                )
-                or f"{data.get('startTime','')} ～ {data.get('endTime','')}",
-            ),
-            ("活動課程名稱", data.get("courseTitle")),
-            ("舉辦單位", data.get("organizer")),
-            ("請具體舉證與專業成長之關係", data.get("relevance")),
-            ("是否核發證書", "是" if data.get("hasCert") == "yes" else "否"),
-            ("證書字號", data.get("certNo")),
-            ("附件清單", "、".join(data.get("attachments") or [])),
-        ]
+    title_type = "校內活動" if record.get("app_type") == "in" else "校外活動"
+    c.setFont(font_name, 14)
+    c.drawString(40, y, f"教師成長時數申請表（{title_type}）")
+    y -= 22
 
-    for label, text in fields:
-        lines = _wrap_text(str(text or ""), 40)
+    c.setFont(font_name, 10)
+    c.drawString(40, y, f"申請單位：{record.get('unit_name', '')}")
+    y -= 16
+    c.drawString(40, y, f"活動日期：{record.get('event_date', '')}")
+    y -= 20
+
+    def draw_field(label, value):
+        nonlocal y
+        text = str(value or "")
+        lines = _wrap_text(text, 40)
         c.setFont(font_name, 10)
         c.drawString(40, y, f"{label}:")
         y -= 14
@@ -249,21 +221,42 @@ def _build_form_pdf(record):
             if y < 90:
                 c.showPage()
                 y = height - 40
+                c.setFont(font_name, 10)
         y -= 6
 
+    common_fields = [
+        ("活動名稱", record.get("event_name")),
+        ("主辦單位", record.get("organizer")),
+        ("核定時數", record.get("approved_hours")),
+        ("審核狀態", record.get("status")),
+        ("審核備註", record.get("review_comment")),
+    ]
+    for label, value in common_fields:
+        draw_field(label, value)
+
+    for key in ["eventDate", "startTime", "endTime", "hours", "location", "note"]:
+        if key in data:
+            draw_field(key, data.get(key))
+
+    slots = record.get("time_slots") or []
+    if slots:
+        slot_lines = [
+            f"{(slot.get('slot_date') or '').strip()} {slot.get('start_time', '')} ~ {slot.get('end_time', '')}".strip()
+            for slot in slots
+        ]
+        draw_field("活動時段", "；".join(slot_lines))
+
     c.setFont(font_name, 11)
-    c.drawString(40, 70, "簽章與備註（列印後簽名）")
+    c.drawString(40, 70, "簽章欄位")
     c.setFont(font_name, 10)
-    c.drawString(40, 54, "申請人（主辦人）________________")
-    c.drawString(40, 40, "申請單位主管________________")
-    c.drawString(280, 54, "處理人員________________")
-    c.drawString(280, 40, "教學資源組組長________________")
-    c.drawString(40, 26, "其他備註：________________________________")
+    c.drawString(40, 54, "申請人簽章：________________")
+    c.drawString(40, 40, "申請單位主管：________________")
+    c.drawString(280, 54, "審核人員：________________")
+    c.drawString(280, 40, "審核日期：________________")
     c.showPage()
     c.save()
     buffer.seek(0)
     return buffer
-
 
 @applications_bp.post("")
 @require_role("dept")
@@ -357,19 +350,12 @@ def review_application(app_id: int):
     if not record:
         return _err("not_found", 404)
     payload = request.get_json(silent=True) or {}
-    raw_status = str(payload.get("status") or "pending").strip().lower()
-    status_alias = {
-        "pending": "pending",
-        "approved": "approved",
-        "rejected": "rejected",
-        "待審核": "pending",
-        "通过": "approved",
-        "通過": "approved",
-        "退件": "rejected",
-    }
-    status = status_alias.get(raw_status, raw_status)
+    current_status = _normalize_status(record.get("status") or "pending")
+    status = _normalize_status(payload.get("status") or "pending")
     if status not in ("pending", "approved", "rejected"):
         return _err("invalid_status")
+    if status not in ALLOWED_REVIEW_TRANSITIONS.get(current_status, set()):
+        return _err("invalid_transition")
     approved_hours = payload.get("approved_hours", None)
     if approved_hours == "":
         approved_hours = None
@@ -379,13 +365,62 @@ def review_application(app_id: int):
         except Exception:
             return _err("invalid_hours")
     review_comment = (payload.get("review_comment") or "").strip()
+    if status == "rejected" and not review_comment:
+        return _err("reject_reason_required")
     reviewer = session.get("account") or session.get("unit_name") or "root"
     reviewed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db.update_application_review(
-        app_id, status, approved_hours, reviewer, review_comment, reviewed_at
+        app_id, current_status, status, approved_hours, reviewer, review_comment, reviewed_at
     )
     return _ok({"id": app_id})
 
+
+@applications_bp.patch("/<int:app_id>/resubmit")
+@require_role("dept")
+def resubmit_application(app_id: int):
+    record = db.get_application(app_id)
+    if not record:
+        return _err("not_found", 404)
+    if session.get("role") != "root" and not _is_owner(record):
+        return _err("forbidden", 403)
+
+    current_status = _normalize_status(record.get("status") or "pending")
+    if current_status != "rejected":
+        return _err("invalid_transition")
+
+    payload = request.get_json(silent=True) or {}
+    resubmit_comment = (
+        payload.get("resubmit_comment")
+        or payload.get("supplement_comment")
+        or payload.get("review_comment")
+        or ""
+    ).strip()
+    if not resubmit_comment:
+        return _err("resubmit_comment_required")
+
+    data = payload.get("data")
+    summary = payload.get("summary")
+    if data is not None:
+        if not isinstance(data, dict):
+            return _err("invalid_data")
+        time_slots = _resolve_time_slots(record.get("app_type") or "", data, payload.get("time_slots"))
+        if time_slots is None:
+            return _err("invalid_time_slots")
+        if _has_future_dates(time_slots):
+            return _err("future_time_not_allowed")
+        _inject_time_slots_into_data(data, time_slots)
+        db.update_application(app_id, data, summary or {}, time_slots=time_slots)
+
+    actor = session.get("account") or session.get("unit_name") or "dept"
+    db.transition_application_status(
+        app_id=app_id,
+        from_status=current_status,
+        to_status="pending",
+        actor=actor,
+        reason=resubmit_comment,
+        action="resubmit",
+    )
+    return _ok({"id": app_id})
 
 @applications_bp.delete("/<int:app_id>")
 @require_role("dept")
@@ -495,3 +530,36 @@ def download_file(app_id: int, file_index: int):
             else image_mime if (inline and image_mime is not None) else None
         ),
     )
+
+
+@applications_bp.delete("/<int:app_id>/files/<int:file_index>")
+@require_role("dept")
+def delete_file(app_id: int, file_index: int):
+    record = db.get_application(app_id)
+    if not record:
+        return _err("not_found", 404)
+    if session.get("role") != "root" and not _is_owner(record):
+        return _err("forbidden", 403)
+
+    removed = db.delete_application_file(app_id, file_index)
+    if not removed:
+        return _err("file_not_found", 404)
+
+    path = (removed.get("path") or "").strip()
+    if path:
+        try:
+            p = Path(path)
+            if p.exists():
+                p.unlink()
+        except Exception:
+            pass
+
+    return _ok({"deleted": True})
+
+
+@applications_bp.post("/<int:app_id>/files/<int:file_index>/delete")
+@require_role("dept")
+def delete_file_via_post(app_id: int, file_index: int):
+    # Alias endpoint for environments that block DELETE requests.
+    return delete_file(app_id, file_index)
+

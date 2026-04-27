@@ -23,6 +23,29 @@ function fmtStatus(status) {
   return "待審核";
 }
 
+function renderStatusHistory(record) {
+  const history = Array.isArray(record.status_history) ? record.status_history : [];
+  if (!history.length) return `<div class="muted">尚無狀態歷程</div>`;
+  return `
+    <div class="status-history">
+      ${history
+        .map((item) => {
+          const fromStatus = item.from_status ? fmtStatus(item.from_status) : "建立";
+          const toStatus = fmtStatus(item.to_status);
+          const reason = (item.reason || "").trim();
+          return `
+            <div class="history-row">
+              <span class="history-status">${fromStatus} -> ${toStatus}</span>
+              <span class="history-meta">${item.actor || "-"} / ${item.created_at || "-"}</span>
+              ${reason ? `<div class="history-reason">${reason}</div>` : ""}
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
 function getActiveStatus() {
   return (
     tabs.find((tab) => tab.classList.contains("is-active"))?.dataset.status ||
@@ -94,28 +117,26 @@ function renderItem(record) {
             <span class="lbl">附件</span>
             ${attachments || "-"}
           </div>
+          <div class="field">
+            <span class="lbl">狀態歷程</span>
+            ${renderStatusHistory(record)}
+          </div>
         </div>
 
         <form class="review-form" data-id="${record.id}">
           <div class="review-actions">
-            <label class="field inline">
-              <span class="lbl">審核狀態</span>
-              <select name="status">
-                <option value="pending" ${status === "pending" ? "selected" : ""}>待審核</option>
-                <option value="approved" ${status === "approved" ? "selected" : ""}>通過</option>
-                <option value="rejected" ${status === "rejected" ? "selected" : ""}>退件</option>
-              </select>
-            </label>
+            <input type="hidden" name="status" value="${status}">
             <label class="field inline">
               <span class="lbl">核定時數</span>
               <input name="approved_hours" type="number" step="0.5" value="${approvedHours}">
             </label>
             <label class="field">
-              <span class="lbl">備註</span>
+              <span class="lbl">退件原因 / 審核備註</span>
               <textarea name="review_comment">${record.review_comment || ""}</textarea>
             </label>
             <div class="actions">
-              <button class="btn primary" type="submit">儲存</button>
+              <button class="btn decision approve" type="button" data-status="approved">通過</button>
+              <button class="btn decision reject" type="button" data-status="rejected">退件</button>
             </div>
           </div>
         </form>
@@ -179,6 +200,11 @@ reviewList?.addEventListener("submit", async (e) => {
     approved_hours: fd.get("approved_hours"),
     review_comment: fd.get("review_comment"),
   };
+  const nextStatus = normalizeStatus(payload.status);
+  if (nextStatus === "rejected" && !String(payload.review_comment || "").trim()) {
+    if (reviewMsg) reviewMsg.textContent = "退件時必須填寫退件原因";
+    return;
+  }
   try {
     await api(`/api/applications/${id}/review`, {
       method: "PATCH",
@@ -188,6 +214,45 @@ reviewList?.addEventListener("submit", async (e) => {
   } catch (err) {
     if (reviewMsg) reviewMsg.textContent = err.message;
   }
+});
+
+async function submitReviewForm(form, forcedStatus) {
+  if (!form || !(form instanceof HTMLFormElement)) return;
+  if (reviewMsg) reviewMsg.textContent = "";
+  const id = form.dataset.id;
+  if (!id) return;
+
+  const fd = new FormData(form);
+  const payload = {
+    status: forcedStatus || fd.get("status"),
+    approved_hours: fd.get("approved_hours"),
+    review_comment: fd.get("review_comment"),
+  };
+  const nextStatus = normalizeStatus(payload.status);
+  if (nextStatus === "rejected" && !String(payload.review_comment || "").trim()) {
+    if (reviewMsg) reviewMsg.textContent = "退件時必須填寫退件原因";
+    return;
+  }
+
+  try {
+    await api(`/api/applications/${id}/review`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    await loadReviews();
+  } catch (err) {
+    if (reviewMsg) reviewMsg.textContent = err.message;
+  }
+}
+
+reviewList?.addEventListener("click", async (e) => {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (!target.classList.contains("decision")) return;
+  const form = target.closest("form.review-form");
+  if (!(form instanceof HTMLFormElement)) return;
+  const status = target.dataset.status || "";
+  await submitReviewForm(form, status);
 });
 
 window.__authUserPromise

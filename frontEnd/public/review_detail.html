@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../src/css/layout.css">
-  <title>時數審核</title>
-  <link rel="stylesheet" href="../src/css/review.css?v=20260430-3" />
+  <title>時數審核明細</title>
+  <link rel="stylesheet" href="../src/css/review_detail.css?v=20260430-1" />
 </head>
 <body>
   <div class="layout">
@@ -18,6 +18,7 @@
         <button id="btnLogoutTop" class="topbar-link is-hidden" type="button">登出</button>
       </div>
     </header>
+
     <aside class="layout-sidebar">
       <nav class="sidebar-nav">
         <a class="nav-link" href="teacher_in">校內申請</a>
@@ -30,31 +31,26 @@
         <button class="lang-btn" type="button">繁體中文</button>
       </div>
     </aside>
+
     <div class="layout-main">
-                        <main class="container">
-        <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:24px;padding:12px 0;">
-          <h2 style="margin:0;">時數審核</h2>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span id="reviewMsg" class="msg"></span>
-            <button id="btnReviewRefresh" class="btn" type="button">重新整理</button>
-          </div>
+      <header class="appbar">
+        <div class="brand">
+          <span class="brand-badge" aria-hidden="true"></span>
+          <h1>時數審核明細</h1>
         </div>
+        <nav class="appbar-actions">
+          <a id="btnBack" class="btn" href="review">返回時數審核</a>
+        </nav>
+      </header>
 
-        <div class="review-toolbar">
-          <div class="tabs" role="tablist">
-            <button class="tab is-active" data-status="all" type="button">全部</button>
-            <button class="tab" data-status="pending" type="button">待審核</button>
-            <button class="tab" data-status="approved" type="button">已通過</button>
-            <button class="tab" data-status="rejected" type="button">退件</button>
-          </div>
-        </div>
-
-        <div id="reviewList" class="review-list"></div>
+      <main class="container">
+        <div id="detailMsg" class="msg"></div>
+        <div id="detailRoot"></div>
       </main>
     </div>
   </div>
+
   <script src="../src/js/auth_guard.js" defer></script>
-  <script src="../src/js/review.js?v=20260430-3" defer></script>
+  <script src="../src/js/review_detail.js?v=20260430-1" defer></script>
 </body>
 </html>
-

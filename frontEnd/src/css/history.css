@@ -19,6 +19,58 @@ body {
   background: var(--ui-bg, #f8fafc);
 }
 
+.layout-main .history-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.history-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 0 22px;
+}
+
+.history-page-kicker {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.history-page-title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.15;
+  color: #0f172a;
+}
+
+.history-page-desc {
+  margin: 10px 0 0;
+  max-width: 720px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.history-page-links {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-card {
+  display: block !important;
+}
+
+.history-loading {
+  padding: 18px 2px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
 .appbar {
   display: flex;
   justify-content: space-between;
@@ -285,6 +337,19 @@ input {
 }
 
 @media (max-width: 768px) {
+  .history-page-head {
+    flex-direction: column;
+    padding-bottom: 18px;
+  }
+
+  .history-page-title {
+    font-size: 28px;
+  }
+
+  .history-page-links {
+    width: 100%;
+  }
+
   .history-summary {
     grid-template-columns: 1fr;
     gap: 16px;

@@ -355,3 +355,189 @@
 .drop-zone-text {
   font-size: 15px;
 }
+
+/* ─────────────────────────────────────────────
+   DELETE CONFIRMATION DIALOGS
+───────────────────────────────────────────── */
+.del-dialog-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: delFadeIn .15s ease;
+}
+.del-dialog-backdrop.is-open {
+  display: flex;
+}
+@keyframes delFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.del-dialog {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  overflow: hidden;
+  animation: delSlideUp .18s ease;
+}
+@keyframes delSlideUp {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.del-dialog-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 28px auto 0;
+}
+
+.del-dialog-body {
+  padding: 14px 28px 20px;
+  text-align: center;
+}
+
+.del-dialog-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  margin: 12px 0 8px;
+}
+
+.del-dialog-desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.del-dialog-actions {
+  display: flex;
+  gap: 10px;
+  padding: 8px 24px 24px;
+}
+
+.del-btn {
+  flex: 1;
+  padding: 11px 0;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+}
+
+.del-btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+.del-btn-cancel:hover { background: #e5e7eb; }
+
+.del-btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+.del-btn-danger:hover { background: #b91c1c; }
+
+/* ===== 多選下拉（鏈結領域 & SDGs） ===== */
+.multi-select {
+  position: relative;
+  width: 100%;
+}
+.ms-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d6dae6;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+  text-align: left;
+}
+.ms-trigger:focus {
+  outline: none;
+  border-color: rgba(59,130,246,.65);
+  box-shadow: 0 0 0 4px rgba(59,130,246,.15);
+}
+.ms-trigger:disabled {
+  background: #f8fafc;
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+.ms-placeholder {
+  color: var(--muted);
+}
+.ms-value {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-caret {
+  margin-left: auto;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid #6b7280;
+  flex-shrink: 0;
+}
+.multi-select.is-open .ms-caret {
+  transform: rotate(180deg);
+}
+.ms-panel {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 100;
+  background: #fff;
+  border: 1px solid #d6dae6;
+  border-radius: 12px;
+  padding: 8px 10px;
+  max-height: 240px;
+  overflow: auto;
+  box-shadow: 0 12px 24px rgba(15,23,42,.12);
+}
+.multi-select.is-open .ms-panel {
+  display: block;
+}
+.ms-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+}
+.ms-option:hover {
+  background: #f3f5fb;
+}
+.ms-option input {
+  width: auto !important;
+  margin: 0 !important;
+  cursor: pointer;
+}
+

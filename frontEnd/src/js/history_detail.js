@@ -3,6 +3,26 @@ const API_BASE = window.API_BASE || "";
 const detailRoot = document.getElementById("detailRoot");
 const detailMsg = document.getElementById("detailMsg");
 const btnBack = document.getElementById("btnBack");
+const DOMAIN_OPTIONS = ["機械", "生產製造", "智慧化", "資訊安全", "資訊素養", "綠能科技", "學術倫理", "智慧財產權", "生命教育", "品德教育", "性別平等"];
+const SDG_OPTIONS = [
+  { value: "SDG1", label: "SDG1 終結貧窮" },
+  { value: "SDG2", label: "SDG2 消除飢餓" },
+  { value: "SDG3", label: "SDG3 健康與福祉" },
+  { value: "SDG4", label: "SDG4 優質教育" },
+  { value: "SDG5", label: "SDG5 性別平權" },
+  { value: "SDG6", label: "SDG6 淨水及衛生" },
+  { value: "SDG7", label: "SDG7 潔淨能源" },
+  { value: "SDG8", label: "SDG8 合適工作與經濟成長" },
+  { value: "SDG9", label: "SDG9 工業化、創新及基礎建設" },
+  { value: "SDG10", label: "SDG10 減少不平等" },
+  { value: "SDG11", label: "SDG11 永續城鄉" },
+  { value: "SDG12", label: "SDG12 責任消費及生產" },
+  { value: "SDG13", label: "SDG13 氣候行動" },
+  { value: "SDG14", label: "SDG14 保育海洋生態" },
+  { value: "SDG15", label: "SDG15 保育陸域生態" },
+  { value: "SDG16", label: "SDG16 和平、正義及健全制度" },
+  { value: "SDG17", label: "SDG17 多元夥伴關係" }
+];
 
 const FIELD_DEFS = {
   in: [
@@ -98,6 +118,75 @@ function buildInput(def, value) {
   return `<input type="${inputType}" name="${def.key}" value="${esc(v)}"${readonlyAttr}>`;
 }
 
+function getCheckedValues(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+}
+function getCheckedLabels(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.parentElement?.textContent?.trim() || cb.value);
+}
+function updateMultiSelectDisplay(container) {
+  if (!container) return;
+  const placeholder = container.querySelector(".ms-placeholder");
+  const valueEl = container.querySelector(".ms-value");
+  const hidden = container.querySelector('input[type="hidden"]');
+  const labels = getCheckedLabels(container);
+  const values = getCheckedValues(container);
+  if (hidden) hidden.value = values.join(", ");
+  if (!valueEl || !placeholder) return;
+  if (labels.length === 0) {
+    placeholder.hidden = false;
+    valueEl.hidden = true;
+    valueEl.textContent = "";
+  } else {
+    placeholder.hidden = true;
+    valueEl.hidden = false;
+    valueEl.textContent = labels.length <= 3 ? labels.join("、") : `已選擇 ${labels.length} 項`;
+  }
+}
+function initMultiSelect(container) {
+  if (!container) return;
+  const trigger = container.querySelector(".ms-trigger");
+  const panel = container.querySelector(".ms-panel");
+  const checkboxes = Array.from(container.querySelectorAll('input[type="checkbox"]'));
+  const close = () => { container.classList.remove("is-open"); trigger?.setAttribute("aria-expanded", "false"); };
+  const toggle = () => { const isOpen = container.classList.toggle("is-open"); trigger?.setAttribute("aria-expanded", isOpen ? "true" : "false"); };
+  trigger?.addEventListener("click", (e) => { e.preventDefault(); toggle(); });
+  panel?.addEventListener("click", (e) => e.stopPropagation());
+  document.addEventListener("click", (e) => { if (!container.contains(e.target)) close(); });
+  checkboxes.forEach(cb => cb.addEventListener("change", () => updateMultiSelectDisplay(container)));
+  updateMultiSelectDisplay(container);
+}
+
+function buildMultiSelectHtml(key, label, selected = []) {
+  const selectedArr = Array.isArray(selected) ? selected : parseArrayText(selected);
+  let optionsHtml = "";
+  if (key === "sdg") {
+    optionsHtml = SDG_OPTIONS.map(opt => `
+      <label class="ms-option"><input type="checkbox" value="${opt.value}" ${selectedArr.includes(opt.value) ? "checked" : ""}>${opt.label}</label>
+    `).join("");
+  } else if (key === "domain") {
+    optionsHtml = DOMAIN_OPTIONS.map(opt => `
+      <label class="ms-option"><input type="checkbox" value="${opt}" ${selectedArr.includes(opt) ? "checked" : ""}>${opt}</label>
+    `).join("");
+  }
+  return `
+    <div class="multi-select" data-multi="${key}">
+      <button type="button" class="ms-trigger" aria-haspopup="listbox" aria-expanded="false">
+        <span class="ms-placeholder">請選擇 ${label}</span>
+        <span class="ms-value" hidden></span>
+        <span class="ms-caret" aria-hidden="true"></span>
+      </button>
+      <div class="ms-panel" role="listbox">
+        ${optionsHtml}
+      </div>
+      <input type="hidden" name="${key}" value="${selectedArr.join(", ")}">
+    </div>
+  `;
+}
+
+
 function fileExt(name) {
   const n = (name || "").toLowerCase();
   const idx = n.lastIndexOf(".");
@@ -105,6 +194,8 @@ function fileExt(name) {
 }
 
 function renderAttachments(record) {
+  const statusNormalized = normalizeStatus(record.status);
+  const canEdit = statusNormalized === "rejected";
   const files = record.data?.attachments_files || [];
   const names = record.data?.attachments || [];
 
@@ -129,7 +220,7 @@ function renderAttachments(record) {
           <div class="file-links" style="margin-top: 12px; display: flex; gap: 8px;">
             <a class="btn ghost" href="${downloadUrl}" target="_blank" rel="noopener">下載</a>
             ${(isPdf || isImage) ? `<a class="btn ghost" href="${inlineUrl}" target="_blank" rel="noopener">預覽</a>` : ""}
-            <button type="button" class="btn ghost danger file-delete" data-file-index="${idx}">刪除附件</button>
+            ${statusNormalized === 'rejected' ? `<button type="button" class="btn ghost danger file-delete" data-file-index="${idx}">刪除附件</button>` : ""}
           </div>
         </div>
       </details>
@@ -140,10 +231,8 @@ function renderAttachments(record) {
     .filter((n) => !files.some((f) => f.name === n))
     .map((n) => `<div class="muted" style="margin-bottom: 8px;">附件名稱：${esc(n)}</div>`);
 
-  const statusNormalized = normalizeStatus(record.status);
-  const readonly = statusNormalized === "approved";
 
-  const uploadUI = readonly ? '' : `
+  const uploadUI = !canEdit ? '' : `
     <div class="file-drop-zone" id="detailFileDropZone" style="margin-top: 16px;">
       <div class="drop-zone-icon">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -384,10 +473,10 @@ function renderDetail(record) {
       if (key === 'timeSlots') {
         const slots = getRecordSlots(normalized);
         const isOut = normalized.app_type === "out";
-        const readonly = statusNormalized === "approved";
+        const readonly = statusNormalized !== "rejected";
         const showBtns = isOut && !readonly;
         const btnStyle = showBtns ? 'style="padding:0 8px; margin-left:8px;"' : 'style="display:none"';
-        const slotRows = slots.length ? slots.map(s => createTimeSlotRow(s, !showBtns)).join("") : createTimeSlotRow({}, !showBtns);
+        const slotRows = slots.length ? slots.map(s => createTimeSlotRow(s, readonly)).join("") : createTimeSlotRow({}, readonly);
         return `
           <div class="field field-span-2">
             <span class="lbl">活動起訖時段 <button type="button" class="btn icon-btn ghost slot-add" title="新增時段" ${btnStyle}>+</button></span>
@@ -402,12 +491,14 @@ function renderDetail(record) {
       const def = defs.find(d => d.key === key);
       if(!def) return "";
       
-      const isReadOnly = def.readonly || statusNormalized === "approved" || def.key === "teacherName" || def.key === "department" || def.key === "teacherId";
+      const isReadOnly = def.readonly || statusNormalized !== "rejected" || def.key === "teacherName" || def.key === "department" || def.key === "teacherId";
       const roClass = isReadOnly ? 'readonly-style' : '';
       const v = def.type === "array" ? arrToText(normalized.data?.[def.key]) : normalized.data?.[def.key] || "";
       
       let inputHtml = "";
-      if (def.type === "textarea") {
+      if (def.type === "array" && !isReadOnly) {
+        inputHtml = buildMultiSelectHtml(def.key, def.label, normalized.data?.[def.key]);
+      } else if (def.type === "textarea") {
         inputHtml = `<textarea name="${def.key}" ${isReadOnly ? "readonly" : ""} class="${roClass}">${esc(v)}</textarea>`;
       } else {
         const inputType = def.type === "date" ? "date" : def.type === "time" ? "time" : "text";
@@ -465,7 +556,6 @@ function renderDetail(record) {
       </div>
       <div class="detail-actions" style="display: flex; gap: 12px;">
         <button type="button" id="btnDelete" class="btn ghost danger">刪除紀錄</button>
-        <button type="submit" form="detailForm" class="btn primary">儲存變更</button>
       </div>
     </div>
 
@@ -519,6 +609,9 @@ function renderDetail(record) {
       }
     });
   }
+
+  // Initialize multi-selects
+  document.querySelectorAll(".multi-select").forEach(ms => initMultiSelect(ms));
 }
 
 async function api(path, options = {}) {
@@ -695,6 +788,11 @@ detailRoot?.addEventListener("click", async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
   if (target.id !== "btnUploadAttachments" || !currentRecord) return;
+  
+  if (normalizeStatus(currentRecord.status) !== "rejected") {
+    setMsg("error", "未經過審核（退件）前不可上傳附件");
+    return;
+  }
 
   const input = detailRoot.querySelector("#detailFiles");
   if (!(input instanceof HTMLInputElement)) return;
@@ -727,30 +825,16 @@ detailRoot?.addEventListener("click", async (event) => {
   const btn = target.closest(".file-delete");
   if (!(btn instanceof HTMLElement)) return;
 
+  if (normalizeStatus(currentRecord.status) !== "rejected") {
+    setMsg("error", "未經過審核（退件）前不可刪除附件");
+    return;
+  }
+
   const fileIndexRaw = btn.getAttribute("data-file-index");
   const fileIndex = Number(fileIndexRaw);
   if (!Number.isInteger(fileIndex) || fileIndex < 0) return;
-  if (!window.confirm("確定要刪除這個附件嗎？")) return;
-
-  try {
-    setMsg("success", "刪除附件中...");
-    try {
-      await api(`/api/applications/${currentRecord.id}/files/${fileIndex}`, {
-        method: "DELETE",
-      });
-    } catch (err) {
-      const msg = String(err?.message || "");
-      if (!msg.includes("405")) throw err;
-      await api(`/api/applications/${currentRecord.id}/files/${fileIndex}/delete`, {
-        method: "POST",
-      });
-    }
-    setMsg("success", "附件已刪除");
-    await loadDetail();
-  } catch (err) {
-    setMsg("error", err.message || "刪除附件失敗");
-    window.alert(err?.message || "刪除附件失敗");
-  }
+  
+  showDeleteFileDialog(fileIndex);
 });
 
 detailRoot?.addEventListener("click", async (event) => {
@@ -768,9 +852,15 @@ detailRoot?.addEventListener("click", async (event) => {
   }
 
   try {
+    const { data, summary, timeSlotsPayload } = buildUpdatePayload(form, form.dataset.type, currentRecord);
     await api(`/api/applications/${currentRecord.id}/resubmit`, {
       method: "PATCH",
-      body: JSON.stringify({ resubmit_comment: resubmitComment }),
+      body: JSON.stringify({
+        resubmit_comment: resubmitComment,
+        data,
+        summary,
+        time_slots: timeSlotsPayload,
+      }),
     });
     setMsg("success", "已重新送審");
     await loadDetail();
@@ -783,13 +873,137 @@ detailRoot?.addEventListener("click", async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
   if (target.id !== "btnDelete" || !currentRecord) return;
-  if (!window.confirm("確定要刪除此申請嗎？")) return;
-  try {
-    await api(`/api/applications/${currentRecord.id}`, { method: "DELETE" });
-    window.location.href = "history";
-  } catch (err) {
-    setMsg("error", err.message || "刪除失敗");
-  }
+  showDeleteAppDialog();
 });
 
-document.addEventListener("DOMContentLoaded", loadDetail);
+// ── Custom Delete Dialogs ─────────────────────────────────
+let _pendingFileIndex = null;
+
+function initDeleteDialogs() {
+  // — Delete File Dialog —
+  const fileDialog = document.createElement("div");
+  fileDialog.id = "deleteFileDialog";
+  fileDialog.className = "del-dialog-backdrop";
+  fileDialog.innerHTML = `
+    <div class="del-dialog" role="alertdialog" aria-modal="true">
+      <div class="del-dialog-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6"></path><path d="M14 11v6"></path>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+        </svg>
+      </div>
+      <div class="del-dialog-body">
+        <h3 class="del-dialog-title">刪除附件</h3>
+        <p class="del-dialog-desc">確定要刪除這個附件嗎？此操作無法復原。</p>
+      </div>
+      <div class="del-dialog-actions">
+        <button type="button" class="del-btn del-btn-cancel" id="deleteFileCancel">取消</button>
+        <button type="button" class="del-btn del-btn-danger" id="deleteFileConfirm">刪除附件</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fileDialog);
+
+  async function execDeleteFile() {
+    closeFileDialog();
+    const idx = _pendingFileIndex;
+    _pendingFileIndex = null;
+    if (idx === null || !currentRecord) return;
+    try {
+      setMsg("success", "刪除附件中...");
+      try {
+        await api(`/api/applications/${currentRecord.id}/files/${idx}`, { method: "DELETE" });
+      } catch (err) {
+        const msg = String(err?.message || "");
+        if (!msg.includes("405")) throw err;
+        await api(`/api/applications/${currentRecord.id}/files/${idx}/delete`, { method: "POST" });
+      }
+      setMsg("success", "附件已刪除");
+      await loadDetail();
+    } catch (err) {
+      setMsg("error", err.message || "刪除附件失敗");
+    }
+  }
+
+  function closeFileDialog() {
+    fileDialog.classList.remove("is-open");
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("deleteFileConfirm").addEventListener("click", execDeleteFile);
+  document.getElementById("deleteFileCancel").addEventListener("click", closeFileDialog);
+  fileDialog.addEventListener("click", (e) => { if (e.target === fileDialog) closeFileDialog(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && fileDialog.classList.contains("is-open")) closeFileDialog();
+  });
+
+  // — Delete Application Dialog —
+  const appDialog = document.createElement("div");
+  appDialog.id = "deleteAppDialog";
+  appDialog.className = "del-dialog-backdrop";
+  appDialog.innerHTML = `
+    <div class="del-dialog" role="alertdialog" aria-modal="true">
+      <div class="del-dialog-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="del-dialog-body">
+        <h3 class="del-dialog-title">刪除此申請</h3>
+        <p class="del-dialog-desc">確定要刪除此申請嗎？刪除後無法復原，所有相關資料將一並消除。</p>
+      </div>
+      <div class="del-dialog-actions">
+        <button type="button" class="del-btn del-btn-cancel" id="deleteAppCancel">取消</button>
+        <button type="button" class="del-btn del-btn-danger" id="deleteAppConfirm">確定刪除</button>
+      </div>
+    </div>`;
+  document.body.appendChild(appDialog);
+
+  async function execDeleteApp() {
+    closeAppDialog();
+    if (!currentRecord) return;
+    try {
+      await api(`/api/applications/${currentRecord.id}`, { method: "DELETE" });
+      window.location.href = "history";
+    } catch (err) {
+      setMsg("error", err.message || "刪除失敗");
+    }
+  }
+
+  function closeAppDialog() {
+    appDialog.classList.remove("is-open");
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("deleteAppConfirm").addEventListener("click", execDeleteApp);
+  document.getElementById("deleteAppCancel").addEventListener("click", closeAppDialog);
+  appDialog.addEventListener("click", (e) => { if (e.target === appDialog) closeAppDialog(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && appDialog.classList.contains("is-open")) closeAppDialog();
+  });
+}
+
+function showDeleteFileDialog(fileIndex) {
+  _pendingFileIndex = fileIndex;
+  const d = document.getElementById("deleteFileDialog");
+  if (!d) return;
+  d.classList.add("is-open");
+  document.body.style.overflow = "hidden";
+  document.getElementById("deleteFileConfirm")?.focus();
+}
+
+function showDeleteAppDialog() {
+  const d = document.getElementById("deleteAppDialog");
+  if (!d) return;
+  d.classList.add("is-open");
+  document.body.style.overflow = "hidden";
+  document.getElementById("deleteAppConfirm")?.focus();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initDeleteDialogs();
+  loadDetail();
+});

@@ -42,7 +42,7 @@ STATUS_ALIAS = {
 ALLOWED_REVIEW_TRANSITIONS = {
     "pending": {"approved", "rejected", "pending"},
     "approved": {"approved", "rejected"},
-    "rejected": {"rejected"},
+    "rejected": set(),
 }
 
 
@@ -287,13 +287,17 @@ def create_application():
 @require_role("dept")
 def list_applications():
     app_type = (request.args.get("type") or "all").strip()
-    role = session.get("role")
-    if role == "root":
-        records = db.list_applications(app_type)
-    else:
-        records = db.list_applications(
-            app_type, unit_name=session.get("unit_name"), account=session.get("account")
-        )
+    records = db.list_applications(
+        app_type, unit_name=session.get("unit_name"), account=session.get("account")
+    )
+    return _ok(records)
+
+
+@applications_bp.get("/admin/list")
+@require_role("root")
+def list_applications_admin():
+    app_type = (request.args.get("type") or "all").strip()
+    records = db.list_applications(app_type)
     return _ok(records)
 
 
@@ -315,8 +319,17 @@ def get_application(app_id: int):
     record = db.get_application(app_id)
     if not record:
         return _err("not_found", 404)
-    if session.get("role") != "root" and not _is_owner(record):
+    if not _is_owner(record):
         return _err("forbidden", 403)
+    return _ok(record)
+
+
+@applications_bp.get("/admin/<int:app_id>")
+@require_role("root")
+def get_application_admin(app_id: int):
+    record = db.get_application(app_id)
+    if not record:
+        return _err("not_found", 404)
     return _ok(record)
 
 
@@ -326,7 +339,7 @@ def update_application(app_id: int):
     record = db.get_application(app_id)
     if not record:
         return _err("not_found", 404)
-    if session.get("role") != "root" and not _is_owner(record):
+    if not _is_owner(record):
         return _err("forbidden", 403)
     payload = request.get_json(silent=True) or {}
     data = payload.get("data")
@@ -381,7 +394,7 @@ def resubmit_application(app_id: int):
     record = db.get_application(app_id)
     if not record:
         return _err("not_found", 404)
-    if session.get("role") != "root" and not _is_owner(record):
+    if not _is_owner(record):
         return _err("forbidden", 403)
 
     current_status = _normalize_status(record.get("status") or "pending")
@@ -428,7 +441,7 @@ def delete_application(app_id: int):
     record = db.get_application(app_id)
     if not record:
         return _err("not_found", 404)
-    if session.get("role") != "root" and not _is_owner(record):
+    if not _is_owner(record):
         return _err("forbidden", 403)
     db.delete_application(app_id)
     return _ok({"id": app_id})
@@ -440,7 +453,7 @@ def upload_files(app_id: int):
     record = db.get_application(app_id)
     if not record:
         return _err("not_found", 404)
-    if session.get("role") != "root" and not _is_owner(record):
+    if not _is_owner(record):
         return _err("forbidden", 403)
     if "files" not in request.files:
         return _err("no_files")
@@ -472,7 +485,7 @@ def print_application(app_id: int):
     record = db.get_application(app_id)
     if not record:
         return _err("not_found", 404)
-    if session.get("role") != "root" and not _is_owner(record):
+    if not _is_owner(record):
         return _err("forbidden", 403)
 
     writer = PdfWriter()
@@ -505,8 +518,39 @@ def download_file(app_id: int, file_index: int):
     record = db.get_application(app_id)
     if not record:
         return _err("not_found", 404)
-    if session.get("role") != "root" and not _is_owner(record):
+    if not _is_owner(record):
         return _err("forbidden", 403)
+    data = record.get("data") or {}
+    files = data.get("attachments_files") or []
+    if file_index < 0 or file_index >= len(files):
+        return _err("file_not_found", 404)
+    info = files[file_index]
+    path = info.get("path")
+    if not path:
+        return _err("file_not_found", 404)
+    filename = info.get("name") or "attachment.pdf"
+    inline = (request.args.get("inline") or "").lower() in ("1", "true", "yes")
+    ext = Path(filename).suffix.lower()
+    is_pdf = ext == ".pdf"
+    image_mime = IMAGE_EXT_TO_MIME.get(ext)
+    return send_file(
+        path,
+        as_attachment=not (inline and (is_pdf or image_mime is not None)),
+        download_name=filename,
+        mimetype=(
+            "application/pdf"
+            if (inline and is_pdf)
+            else image_mime if (inline and image_mime is not None) else None
+        ),
+    )
+
+
+@applications_bp.get("/admin/<int:app_id>/files/<int:file_index>")
+@require_role("root")
+def download_file_admin(app_id: int, file_index: int):
+    record = db.get_application(app_id)
+    if not record:
+        return _err("not_found", 404)
     data = record.get("data") or {}
     files = data.get("attachments_files") or []
     if file_index < 0 or file_index >= len(files):
@@ -562,4 +606,3 @@ def delete_file(app_id: int, file_index: int):
 def delete_file_via_post(app_id: int, file_index: int):
     # Alias endpoint for environments that block DELETE requests.
     return delete_file(app_id, file_index)
-

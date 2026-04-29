@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="../src/css/layout.css">
+  <link rel="stylesheet" href="../src/css/layout.css?v=20260430-2">
   <title>歷史紀錄</title>
-  <link rel="stylesheet" href="../src/css/history.css" />
+  <link rel="stylesheet" href="../src/css/history.css?v=20260430-2" />
 </head>
 <body>
   <div class="layout">
@@ -31,43 +31,41 @@
       </div>
     </aside>
     <div class="layout-main">
-  <header class="appbar">
-    <div class="brand">
-      <span class="brand-badge" aria-hidden="true"></span>
-      <h1>歷史紀錄</h1>
+      <main class="container history-page">
+        <section class="history-page-head" aria-labelledby="historyPageTitle">
+          <div>
+            <!-- 申請資料已移除 -->
+            <h1 id="historyPageTitle" class="history-page-title">歷史紀錄</h1>
+            <p class="history-page-desc">查看自己的校內與校外申請紀錄，並進入明細頁處理退件案件。</p>
+          </div>
+          <!-- 校外/校內申請按鈕已移除 -->
+        </section>
+
+        <section class="card history-card">
+          <div class="card-hd">申請紀錄</div>
+          <div class="history-toolbar">
+            <div class="tabs" role="tablist">
+              <button class="tab is-active" data-type="all" type="button">全部</button>
+              <button class="tab" data-type="in" type="button">校內</button>
+              <button class="tab" data-type="out" type="button">校外</button>
+            </div>
+            <div class="actions">
+              <button id="btnRefresh" class="btn btn-icon" type="button" aria-label="更新" title="更新">
+                <img src="icon/reload.png" alt="更新" />
+              </button>
+              <span id="historyMsg" class="msg"></span>
+            </div>
+          </div>
+
+          <div id="historyList" class="history-list">
+            <div class="history-loading">載入歷史紀錄中...</div>
+          </div>
+        </section>
+      </main>
     </div>
-    <nav class="appbar-actions">
-      <a class="btn" href="teacher">校外申請</a>
-      <a class="btn" href="teacher_in">校內申請</a>
-      <a class="btn ghost" href="admin">管理</a>
-    </nav>
-  </header>
-
-  <main class="container">
-    <section class="card">
-      <div class="card-hd">申請紀錄</div>
-      <div class="history-toolbar">
-        <div class="tabs" role="tablist">
-          <button class="tab is-active" data-type="all" type="button">全部</button>
-          <button class="tab" data-type="in" type="button">校內</button>
-          <button class="tab" data-type="out" type="button">校外</button>
-        </div>
-        <div class="actions">
-          <button id="btnRefresh" class="btn btn-icon" type="button" aria-label="更新" title="更新">
-            <img src="icon/reload.png" alt="更新" />
-          </button>
-          <span id="historyMsg" class="msg"></span>
-        </div>
-      </div>
-
-      <div id="historyList" class="history-list"></div>
-    </section>
-
-  </main>
   </div>
-  </div>
-  <script src="../src/js/auth_guard.js" defer></script>
-  <script src="../src/js/history.js" defer></script>
+  <script src="../src/js/auth_guard.js?v=20260430-2" defer></script>
+  <script src="../src/js/history.js?v=20260430-2" defer></script>
 </body>
 </html>
 

@@ -32,48 +32,73 @@
       </div>
     </aside>
     <div class="layout-main">
-      <main class="container">
-        <section class="card">
-          <div class="card-hd">相關度批次評分（每週一）</div>
-          <div class="toolbar">
-            <label class="field">
-              <span class="lbl">批次週一</span>
-              <input id="weekMonday" type="date">
-            </label>
-            <label class="field">
-              <span class="lbl">LM Studio Base URL</span>
-              <input id="lmBaseUrl" type="text" value="http://127.0.0.1:1234/v1">
-            </label>
-            <label class="field">
-              <span class="lbl">Model</span>
-              <input id="lmModel" type="text" value="local-model">
-            </label>
+            <main class="container">
+        <!-- AI 評分控制台 -->
+        <div class="page-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 24px; padding: 12px 0;">
+          <h2 style="font-size: 24px; color: var(--text); margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--brand);"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            AI 相關度批次評分作業
+          </h2>
+        </div>
+
+        <section class="control-panel">
+          <div class="control-group">
+            <h4 class="group-title">資料載入區</h4>
+            <div class="toolbar">
+              <label class="field">
+                <span class="lbl">批次週一</span>
+                <input id="weekMonday" type="date">
+              </label>
+              <div class="actions inline-actions" style="align-items: flex-end; padding-bottom: 2px;">
+                <button id="btnSetCurrentMonday" class="btn ghost" type="button">設為本週一</button>
+                <button id="btnLoadBatch" class="btn" type="button">載入資料</button>
+                <button id="btnSelectAll" class="btn" type="button">全選可評分</button>
+              </div>
+            </div>
           </div>
-          <div class="actions">
-            <button id="btnSetCurrentMonday" class="btn" type="button">設為本週一</button>
-            <button id="btnLoadBatch" class="btn" type="button">載入本週資料</button>
-            <button id="btnSelectAll" class="btn" type="button">全選可評分</button>
-            <button id="btnRunScore" class="btn primary" type="button">執行批次評分</button>
-            <button id="btnWriteBack" class="btn" type="button">回寫審核備註</button>
-            <button id="btnExportCsv" class="btn" type="button">匯出 CSV</button>
+
+          <div class="control-group">
+            <h4 class="group-title">AI 引擎設定</h4>
+            <div class="toolbar">
+              <label class="field" style="flex: 2;">
+                <span class="lbl">LM Studio Base URL</span>
+                <input id="lmBaseUrl" type="text" value="http://127.0.0.1:1234/v1">
+              </label>
+              <label class="field" style="flex: 1;">
+                <span class="lbl">Model 名稱</span>
+                <input id="lmModel" type="text" value="local-model">
+              </label>
+            </div>
           </div>
-          <div id="scoreMsg" class="msg"></div>
+          
+          <div class="control-actions">
+            <div id="scoreMsg" class="msg"></div>
+            <div class="actions-right">
+              <button id="btnWriteBack" class="btn ghost" type="button">回寫審核備註</button>
+              <button id="btnExportCsv" class="btn ghost" type="button">匯出 CSV</button>
+              <button id="btnRunScore" class="btn primary btn-large" type="button" style="display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                執行批次評分
+              </button>
+            </div>
+          </div>
         </section>
 
-        <section class="card">
-          <div class="card-hd">待評分清單</div>
+        <!-- 待評分清單 -->
+        <section class="data-grid-section">
+          <h4 class="group-title">待評分清單</h4>
           <div class="table-wrap">
-            <table class="table">
+            <table class="table modern-table">
               <thead>
                 <tr>
-                  <th>選取</th>
-                  <th>ID</th>
-                  <th>建立時間</th>
-                  <th>類型</th>
-                  <th>單位</th>
+                  <th width="50">選取</th>
+                  <th width="50">ID</th>
+                  <th width="140">建立時間</th>
+                  <th width="80">類型</th>
+                  <th width="180">單位</th>
                   <th>活動名稱</th>
-                  <th>摘要</th>
-                  <th>分數</th>
+                  <th width="280">摘要</th>
+                  <th width="80" style="text-align: center;">分數</th>
                   <th>結果</th>
                 </tr>
               </thead>

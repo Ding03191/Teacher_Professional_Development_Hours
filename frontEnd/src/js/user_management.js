@@ -49,7 +49,7 @@ async function loadUsers() {
       <td>${u.name || ""}</td>
       <td>${u.email || ""}</td>
       <td>
-        <select data-id="${u.id}">
+        <select data-id="${u.id}" class="modern-select" style="min-width: 140px; padding: 6px 10px; background: transparent;">
           <option value="teacher">teacher</option>
           <option value="staff">staff</option>
           <option value="root">root</option>
@@ -58,7 +58,7 @@ async function loadUsers() {
       <td>${u.created_at || ""}</td>
       <td class="row-actions">
         <button class="btn ghost" data-action="save" data-id="${u.id}" type="button">更新</button>
-        <button class="btn ghost" data-action="delete" data-id="${u.id}" type="button">刪除</button>
+        <button class="btn danger-ghost" data-action="delete" data-id="${u.id}" type="button">刪除</button>
       </td>
     `;
     const select = tr.querySelector("select");
@@ -79,9 +79,9 @@ async function loadDepartments() {
     tr.innerHTML = `
       <td>${d.id}</td>
       <td>${d.unit_no ?? ""}</td>
-      <td><input type="text" data-field="unit_name" value="${d.unit_name || ""}"></td>
-      <td><input type="text" data-field="account" value="${d.account || ""}"></td>
-      <td><input type="password" data-field="password" placeholder="不修改請留空"></td>
+      <td><input type="text" data-field="unit_name" value="${d.unit_name || ""}" style="background: transparent;"></td>
+      <td><input type="text" data-field="account" value="${d.account || ""}" style="background: transparent;"></td>
+      <td><input type="password" data-field="password" placeholder="不修改請留空" style="background: transparent;"></td>
       <td>${d.created_at || ""}</td>
       <td class="row-actions">
         <button class="btn ghost" data-action="save-dept" data-id="${d.id}" type="button">更新</button>
@@ -186,3 +186,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+
+
+// Tabs Logic
+const tabs = document.querySelectorAll('.tab');
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('is-active'));
+    tab.classList.add('is-active');
+    
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+    const targetId = tab.dataset.target;
+    document.getElementById(targetId + 'View').style.display = 'block';
+  });
+});

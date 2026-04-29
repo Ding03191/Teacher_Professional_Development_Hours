@@ -31,24 +31,25 @@
       </div>
     </aside>
     <div class="layout-main">
-      <main class="container">
-        <section class="card">
-          <div class="card-hd">時數審核</div>
-          <div class="review-toolbar">
-            <div class="tabs" role="tablist">
-              <button class="tab is-active" data-status="all" type="button">全部</button>
-              <button class="tab" data-status="pending" type="button">待審核</button>
-              <button class="tab" data-status="approved" type="button">通過</button>
-              <button class="tab" data-status="rejected" type="button">退件</button>
-            </div>
-            <div class="actions">
-              <button id="btnReviewRefresh" class="btn" type="button">重新整理</button>
-              <span id="reviewMsg" class="msg"></span>
-            </div>
+                        <main class="container">
+        <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:24px;padding:12px 0;">
+          <h2 style="margin:0;">時數審核</h2>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span id="reviewMsg" class="msg"></span>
+            <button id="btnReviewRefresh" class="btn" type="button">重新整理</button>
           </div>
+        </div>
 
-          <div id="reviewList" class="review-list"></div>
-        </section>
+        <div class="review-toolbar">
+          <div class="tabs" role="tablist">
+            <button class="tab is-active" data-status="all" type="button">全部</button>
+            <button class="tab" data-status="pending" type="button">待審核</button>
+            <button class="tab" data-status="approved" type="button">已通過</button>
+            <button class="tab" data-status="rejected" type="button">退件</button>
+          </div>
+        </div>
+
+        <div id="reviewList" class="review-list"></div>
       </main>
     </div>
   </div>

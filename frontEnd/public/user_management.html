@@ -33,82 +33,105 @@
     </aside>
 
     <div class="layout-main">
-      <main class="container">
-        <section class="section-hd">
-          <h2>使用者管理</h2>
-          <p id="adminHint" class="muted"></p>
+            <main class="container">
+        <!-- 頁首與標題 -->
+        <div class="page-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 24px; padding: 12px 0;">
+          <div>
+            <h2 style="font-size: 24px; color: var(--text); margin: 0 0 8px 0; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--brand);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              使用者管理
+            </h2>
+            <p id="adminHint" class="muted" style="margin: 0;"></p>
+          </div>
+        </div>
+
+        <!-- 新增使用者表單 -->
+        <section class="control-panel">
+          <div class="control-group">
+            <h4 class="group-title">新增使用者</h4>
+            <form id="createForm" class="form grid g-2" style="background: rgba(248, 250, 252, 0.5); padding: 24px; border-radius: 12px; border: 1px dashed var(--border);">
+              <label class="field">
+                <span class="lbl">姓名</span>
+                <input name="name" required placeholder="請輸入姓名" />
+              </label>
+              <label class="field">
+                <span class="lbl">Email (帳號)</span>
+                <input name="email" type="email" required placeholder="user@example.com" />
+              </label>
+              <label class="field">
+                <span class="lbl">密碼</span>
+                <input name="password" type="password" required placeholder="請輸入密碼" />
+              </label>
+              <label class="field">
+                <span class="lbl">角色權限</span>
+                <select name="role" class="modern-select">
+                  <option value="teacher">teacher (一般教師)</option>
+                  <option value="staff">staff (行政人員)</option>
+                  <option value="root">root (系統管理員)</option>
+                </select>
+              </label>
+              <div class="actions span-2" style="justify-content: flex-end; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
+                <span id="createMsg" class="msg" style="margin-right: 16px; align-self: center;"></span>
+                <button class="btn primary btn-large" type="submit" style="display: flex; align-items: center; gap: 8px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  新增使用者
+                </button>
+              </div>
+            </form>
+          </div>
         </section>
 
-        <article class="card">
-          <div class="card-hd">新增使用者</div>
-          <form id="createForm" class="form grid g-2">
-            <label class="field">
-              <span class="lbl">姓名</span>
-              <input name="name" required />
-            </label>
-            <label class="field">
-              <span class="lbl">Email</span>
-              <input name="email" type="email" required />
-            </label>
-            <label class="field">
-              <span class="lbl">密碼</span>
-              <input name="password" type="password" required />
-            </label>
-            <label class="field">
-              <span class="lbl">角色</span>
-              <select name="role">
-                <option value="teacher">teacher</option>
-                <option value="staff">staff</option>
-                <option value="root">root</option>
-              </select>
-            </label>
-            <div class="actions span-2">
-              <button class="btn primary" type="submit">新增</button>
-              <span id="createMsg" class="msg"></span>
+        <!-- 資料列表與頁籤 -->
+        <section class="data-grid-section">
+          <div class="review-toolbar" style="margin-bottom: 24px; border-bottom: 1px solid var(--border);">
+            <div class="tabs" role="tablist" style="display: flex; gap: 24px; overflow-x: auto;">
+              <button class="tab is-active" data-target="users" type="button" style="padding: 12px 4px; font-size: 16px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s;">一般使用者</button>
+              <button class="tab" data-target="depts" type="button" style="padding: 12px 4px; font-size: 16px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s;">部門帳號</button>
             </div>
-          </form>
-        </article>
-
-        <article class="card">
-          <div class="card-hd">使用者列表</div>
-          <div class="table-wrap">
-            <table class="table" id="userTable">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>姓名</th>
-                  <th>Email</th>
-                  <th>角色</th>
-                  <th>建立時間</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
           </div>
-          <div id="listMsg" class="msg"></div>
-        </article>
 
-        <article class="card">
-          <div class="card-hd">部門帳號</div>
-          <div class="table-wrap">
-            <table class="table" id="deptTable">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>單位代碼</th>
-                  <th>單位名稱</th>
-                  <th>帳號</th>
-                  <th>新密碼（選填）</th>
-                  <th>建立時間</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+          <!-- 使用者列表 -->
+          <div id="usersView" class="tab-content" style="display: block;">
+            <div class="table-wrap">
+              <table class="table modern-table" id="userTable">
+                <thead>
+                  <tr>
+                    <th width="60">ID</th>
+                    <th width="120">姓名</th>
+                    <th width="200">Email</th>
+                    <th width="160">角色</th>
+                    <th width="180">建立時間</th>
+                    <th style="text-align: right;">操作</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div id="listMsg" class="msg" style="margin-top: 12px;"></div>
           </div>
-          <div id="deptMsg" class="msg"></div>
-        </article>
+
+          <!-- 部門列表 -->
+          <div id="deptsView" class="tab-content" style="display: none;">
+            <div class="table-wrap">
+              <table class="table modern-table" id="deptTable">
+                <thead>
+                  <tr>
+                    <th width="60">ID</th>
+                    <th width="100">代碼</th>
+                    <th width="180">單位名稱</th>
+                    <th width="120">帳號</th>
+                    <th width="200">新密碼（選填）</th>
+                    <th width="180">建立時間</th>
+                    <th style="text-align: right;">操作</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div id="deptMsg" class="msg" style="margin-top: 12px;"></div>
+          </div>
+        </section>
+
       </main>
 
     </div>

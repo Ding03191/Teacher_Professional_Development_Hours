@@ -87,27 +87,45 @@ function renderItem(record) {
       : hours;
   const attachments = renderAttachmentsLinks(record);
   return `
-    <details class="review-item">
-      <summary class="review-summary">
-        <span class="review-badge ${record.app_type}">${fmtType(record.app_type)}</span>
-        <span class="status-badge ${status}">${fmtStatus(status)}</span>
-        <strong>${record.event_name || "-"}</strong>
-        <span class="muted">${record.event_date || "-"}</span>
-        <span class="muted">${record.unit_name || "-"}</span>
+    <details class="review-item history-item">
+      <summary class="history-summary" style="list-style:none;">
+        <div class="history-summary-left" style="margin-right:16px;">
+          <span class="history-badge ${record.app_type}">${fmtType(record.app_type)}</span>
+        </div>
+        <div class="history-summary-main">
+          <h4 class="history-summary-title">${record.event_name || "-"}</h4>
+          <div class="history-summary-meta">
+            <span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              ${record.event_date || "-"}
+            </span>
+            <span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              ${record.unit_name || "-"}
+            </span>
+            <span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              ${record.account || "-"}
+            </span>
+          </div>
+        </div>
+        <div class="history-summary-right">
+          <div class="history-hours">
+            <span class="history-hours-val">${hours || "-"}</span>
+            <span class="history-hours-lbl">小時</span>
+          </div>
+          <span class="status-badge ${status}">${fmtStatus(status)}</span>
+          <div class="history-chevron">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
       </summary>
-      <div class="review-detail">
+
+      <div class="review-detail" style="padding: 24px; border-top: 1px solid #f1f5f9; background: #fafbfc; border-radius: 0 0 16px 16px;">
         <div class="review-grid">
           <div class="field">
-            <span class="lbl">申請單位</span>
-            <div>${record.unit_name || "-"}</div>
-          </div>
-          <div class="field">
-            <span class="lbl">帳號</span>
-            <div>${record.account || "-"}</div>
-          </div>
-          <div class="field">
             <span class="lbl">申請時數</span>
-            <div>${hours}</div>
+            <div>${hours || "-"}</div>
           </div>
           <div class="field">
             <span class="lbl">建立時間</span>
@@ -115,7 +133,7 @@ function renderItem(record) {
           </div>
           <div class="field">
             <span class="lbl">附件</span>
-            ${attachments || "-"}
+            ${attachments || '<span class="muted">無附件</span>'}
           </div>
           <div class="field">
             <span class="lbl">狀態歷程</span>
@@ -123,21 +141,21 @@ function renderItem(record) {
           </div>
         </div>
 
-        <form class="review-form" data-id="${record.id}">
-          <div class="review-actions">
-            <input type="hidden" name="status" value="${status}">
-            <label class="field inline">
-              <span class="lbl">核定時數</span>
-              <input name="approved_hours" type="number" step="0.5" value="${approvedHours}">
-            </label>
+        <form class="review-form" data-id="${record.id}" style="margin-top: 24px; padding-top: 24px; border-top: 1px dashed #e2e8f0;">
+          <input type="hidden" name="status" value="${status}">
+          <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end;">
             <label class="field">
-              <span class="lbl">退件原因 / 審核備註</span>
-              <textarea name="review_comment">${record.review_comment || ""}</textarea>
+              <span class="lbl">核定時數</span>
+              <input name="approved_hours" type="number" step="0.5" value="${approvedHours}" style="max-width: 120px;">
             </label>
-            <div class="actions">
-              <button class="btn decision approve" type="button" data-status="approved">通過</button>
-              <button class="btn decision reject" type="button" data-status="rejected">退件</button>
-            </div>
+            <label class="field" style="flex: 1; min-width: 220px;">
+              <span class="lbl">退件原因 / 審核備註</span>
+              <textarea name="review_comment" placeholder="若退件必填，若通過則選填" style="min-height: 72px; resize: vertical;">${record.review_comment || ""}</textarea>
+            </label>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+            <button class="btn ghost decision reject" type="button" data-status="rejected" style="color: #dc2626; border-color: #fca5a5;">退件</button>
+            <button class="btn primary decision approve" type="button" data-status="approved">審核通過</button>
           </div>
         </form>
       </div>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
@@ -56,9 +56,8 @@
           </p>
         </div>
 
-        <article class="card">
-          <div class="card-hd">基本活動資訊</div>
-          <div class="card-bd">
+        <div class="form-group">
+          <div class="group-title">基本活動資訊</div>
             <form id="formInCampus" class="form" novalidate>
               <div class="grid g-2">
                 <label class="field">
@@ -109,11 +108,9 @@
 
 
               </div>
-          </div>
-        </article>
-        <article class="card card-allow-overflow" style="margin-top:16px;">
-          <div class="card-hd">鏈結領域 & SDGs 指標</div>
-          <div class="card-bd">
+        </div>
+        <div class="form-group">
+          <div class="group-title">鏈結領域 & SDGs 指標</div>
             <div class="grid g-2">
 
               <!-- 鏈結領域（下拉多選） -->
@@ -184,12 +181,10 @@
               </div>
 
             </div>
-          </div>
-        </article>
+        </div>
 
-        <article class="card" style="margin-top:16px;">
-          <div class="card-hd">活動說明</div>
-          <div class="card-bd">
+        <div class="form-group">
+          <div class="group-title">活動說明</div>
             <div class="grid">
               <label class="field">
                 <span class="lbl">活動與提升教師教學專業發展之關係（教學專業）</span>
@@ -200,33 +195,37 @@
                 <textarea name="note" placeholder="例如：特殊情況補充、活動補充說明（選填）"></textarea>
               </label>
             </div>
-          </div>
-        </article>
-
-        <!-- 醒目提醒 -->
-        <article class="card" style="margin-top:16px;">
-          <div class="card-hd">上傳附件（PDF、Excel 或圖檔）</div>
-          <div class="card-bd">
-            <div class="field">
-              <span class="lbl">上傳佐證資料（可多檔）</span>
-              <input id="filesIn" type="file" multiple accept=".pdf,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp">
-              <ul id="fileListIn" class="file-list"></ul>
-              <p class="sample-download-wrap">
-                <a id="sampleExcelLinkIn" class="sample-download-link" href="./ex.csv" download>下載附件範例（Excel）</a>
-              </p>
-              <p class="muted">僅支援 PDF 或 Excel 檔案。</p>
-            </div>
-          </div>
-        </article>
-</form>
-<div id="msgIn" class="msg"></div>
-        <div class="actions">
-          <button type="button" class="btn primary" id="btnCheckIn">送出</button>
         </div>
 
-        <article class="card" print-only style="margin-top:16px;" hidden>
-          <div class="card-hd">簽章與備註（列印後簽名）</div>
-          <div class="card-bd">
+        <div class="form-group">
+          <h4 class="group-title">佐證與附件</h4>
+          <div class="field">
+            <span class="lbl req">上傳佐證資料（可多檔）</span>
+            <div class="file-drop-zone" id="fileDropZoneIn">
+              <div class="drop-zone-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              </div>
+              <div class="drop-zone-text">
+                <span class="text-primary font-bold">點擊選擇檔案</span> 或將檔案拖曳至此
+              </div>
+              <p class="muted" style="margin-top: 4px; text-align: center;">請至少上傳 1 份：PDF、Excel 或圖檔（JPG/PNG/WebP）</p>
+              <input id="filesIn" type="file" multiple accept=".pdf,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp" required>
+            </div>
+            <ul id="fileListIn" class="file-list"></ul>
+            <p class="sample-download-wrap" style="margin-top: 12px;">
+              <a id="sampleExcelLinkIn" class="sample-download-link" href="./ex.csv" download>📥 下載附件範例（Excel）</a>
+            </p>
+          </div>
+        </div>
+      </form>
+      <div id="msgIn" class="msg"></div>
+      <div class="form-actions">
+        <button type="button" class="btn ghost" onclick="history.back()">取消</button>
+        <button type="button" class="btn primary btn-large" id="btnCheckIn">送出申請</button>
+      </div>
+
+        <div class="form-group print-only" hidden>
+          <div class="group-title">簽章與備註（列印後簽名）</div>
             <div class="grid g-2">
               <label class="field">
                 <span class="lbl">申請人（主辦人）</span>
@@ -252,8 +251,8 @@
                 <textarea name="notePrint" placeholder="例如：特殊說明、附件清單或補充事項。"></textarea>
               </label>
             </div>
-          </div>
-        </article>
+            </div>
+        </div>
 
       </div>
     </section>

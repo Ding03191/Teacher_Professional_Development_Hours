@@ -549,3 +549,27 @@ document.addEventListener("DOMContentLoaded", () => {
   try { updateHoursIn(); } catch (_) {}
   try { renderPreview(); } catch (_) {}
 });
+
+// ===== 拖曳上傳區塊互動 =====
+document.addEventListener("DOMContentLoaded", () => {
+  const fileDropZone = document.getElementById("fileDropZoneIn");
+  const fileInput = document.getElementById("filesIn");
+  
+  if (fileDropZone && fileInput) {
+    fileDropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      fileDropZone.classList.add("drag-active");
+    });
+    fileDropZone.addEventListener("dragleave", () => {
+      fileDropZone.classList.remove("drag-active");
+    });
+    fileDropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      fileDropZone.classList.remove("drag-active");
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event("change"));
+      }
+    });
+  }
+});

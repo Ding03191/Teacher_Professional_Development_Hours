@@ -116,9 +116,9 @@ function renderAttachments(record) {
     const isPdf = ext === ".pdf";
     const isImage = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"].includes(ext);
     return `
-      <details class="file-item">
-        <summary>${esc(name)}</summary>
-        <div class="file-content">
+      <details class="file-item" style="margin-bottom: 8px;">
+        <summary style="font-weight: 500;">${esc(name)}</summary>
+        <div class="file-content" style="padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; margin-top: 8px;">
           ${
             isPdf
               ? `<div class="file-preview-frame"><iframe src="${inlineUrl}" title="${esc(name)}" loading="lazy"></iframe></div>`
@@ -126,10 +126,10 @@ function renderAttachments(record) {
                 ? `<div class="image-preview-frame"><img src="${inlineUrl}" alt="${esc(name)}" loading="lazy"></div>`
                 : `<div class="muted">此檔案類型不支援站內預覽，可直接下載。</div>`
           }
-          <div class="file-links">
-            <a class="file-link" href="${downloadUrl}" target="_blank" rel="noopener">下載</a>
-            ${(isPdf || isImage) ? `<a class="file-link" href="${inlineUrl}" target="_blank" rel="noopener">預覽</a>` : ""}
-            <button type="button" class="file-link danger file-delete" data-file-index="${idx}">刪除附件</button>
+          <div class="file-links" style="margin-top: 12px; display: flex; gap: 8px;">
+            <a class="btn ghost" href="${downloadUrl}" target="_blank" rel="noopener">下載</a>
+            ${(isPdf || isImage) ? `<a class="btn ghost" href="${inlineUrl}" target="_blank" rel="noopener">預覽</a>` : ""}
+            <button type="button" class="btn ghost danger file-delete" data-file-index="${idx}">刪除附件</button>
           </div>
         </div>
       </details>
@@ -138,23 +138,36 @@ function renderAttachments(record) {
 
   const pendingNames = names
     .filter((n) => !files.some((f) => f.name === n))
-    .map((n) => `<div class="muted">附件名稱：${esc(n)}</div>`);
+    .map((n) => `<div class="muted" style="margin-bottom: 8px;">附件名稱：${esc(n)}</div>`);
+
+  const statusNormalized = normalizeStatus(record.status);
+  const readonly = statusNormalized === "approved";
+
+  const uploadUI = readonly ? '' : `
+    <div class="file-drop-zone" id="detailFileDropZone" style="margin-top: 16px;">
+      <div class="drop-zone-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+      </div>
+      <div class="drop-zone-text">
+        <span class="text-primary font-bold">點擊選擇檔案</span> 或將檔案拖曳至此 (重新上傳)
+      </div>
+      <p class="muted" style="margin-top: 4px;">請至少上傳 1 份：PDF、Excel 或圖檔</p>
+      <input id="detailFiles" type="file" multiple accept=".pdf,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+    </div>
+    <div id="detailUploadList" class="muted upload-list" style="margin-top: 8px;"></div>
+    <div style="margin-top: 8px;"><button type="button" id="btnUploadAttachments" class="btn ghost">上傳所選附件</button></div>
+  `;
 
   return `
-    <details class="attachments-panel" open>
-      <summary>附件（${files.length || names.length}）</summary>
+    <div class="form-group" style="margin-top: 40px;">
+      <h4 class="group-title">附件清單（${files.length || names.length}）</h4>
       <div class="attachments-body">
         ${files.length || names.length ? "" : '<div class="muted">尚無附件</div>'}
         ${stored.join("")}
         ${pendingNames.join("")}
-        <div class="attachments-upload">
-          <label class="lbl" for="detailFiles">重新上傳附件（可多檔）</label>
-          <input id="detailFiles" type="file" multiple accept=".pdf,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp">
-          <div id="detailUploadList" class="muted upload-list"></div>
-          <button type="button" id="btnUploadAttachments" class="btn ghost">上傳附件</button>
-        </div>
+        ${uploadUI}
       </div>
-    </details>
+    </div>
   `;
 }
 
@@ -290,17 +303,22 @@ function renderStatusHistory(history) {
   const rows = Array.isArray(history) ? history : [];
   if (!rows.length) return `<div class="muted">尚無狀態歷程</div>`;
   return `
-    <div class="status-history">
+    <div class="timeline">
       ${rows
         .map((row) => {
           const fromStatus = row.from_status ? fmtStatus(row.from_status) : "建立";
           const toStatus = fmtStatus(row.to_status);
           const reason = (row.reason || "").trim();
+          const isError = row.to_status === 'rejected';
+          const iconColor = isError ? 'var(--danger)' : 'var(--accent)';
           return `
-            <div class="history-row">
-              <div class="history-title">${esc(fromStatus)} -> ${esc(toStatus)}</div>
-              <div class="history-meta">${esc(row.actor || "-")} / ${esc(row.created_at || "-")}</div>
-              ${reason ? `<div class="history-reason">${esc(reason)}</div>` : ""}
+            <div class="timeline-item">
+              <div class="timeline-dot" style="background-color: ${iconColor};"></div>
+              <div class="timeline-content">
+                <div class="timeline-title">${esc(fromStatus)} &rarr; ${esc(toStatus)}</div>
+                <div class="timeline-meta">${esc(row.actor || "-")} / ${esc(row.created_at || "-")}</div>
+                ${reason ? `<div class="timeline-reason">${esc(reason)}</div>` : ""}
+              </div>
             </div>
           `;
         })
@@ -309,21 +327,109 @@ function renderStatusHistory(history) {
   `;
 }
 
+function createTimeSlotRow(slot = {}, readonly = false) {
+  const ro = readonly ? "readonly" : "required";
+  const btnStyle = readonly ? 'style="visibility:hidden"' : '';
+  const today = new Date().toISOString().slice(0, 10);
+  return `
+    <div class="time-slot-row">
+      <div class="time-slot-date-group">
+        <input type="date" class="slot-date-start" value="${esc(slot.startDate || slot.slotDate || "")}" max="${today}" ${ro}>
+        <span class="time-slot-sep">~</span>
+        <input type="date" class="slot-date-end" value="${esc(slot.endDate || slot.slotEndDate || slot.slotDate || "")}" max="${today}" ${ro}>
+      </div>
+      <div class="time-slot-time-group">
+        <input type="time" class="slot-start" value="${esc(slot.startTime || "")}" ${ro}>
+        <span class="time-slot-sep">~</span>
+        <input type="time" class="slot-end" value="${esc(slot.endTime || "")}" ${ro}>
+      </div>
+      <button type="button" class="btn ghost slot-remove" aria-label="移除時段" ${btnStyle}>×</button>
+    </div>
+  `;
+}
+
+function getTimeSlotsFromDOM(form) {
+  const container = form.querySelector("#timeSlotsList");
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(".time-slot-row")).map(row => ({
+    startDate: row.querySelector(".slot-date-start")?.value?.trim() || "",
+    endDate: row.querySelector(".slot-date-end")?.value?.trim() || "",
+    startTime: row.querySelector(".slot-start")?.value?.trim() || "",
+    endTime: row.querySelector(".slot-end")?.value?.trim() || "",
+  }));
+}
+
 function renderDetail(record) {
   if (!detailRoot) return;
   const normalized = normalizeRecord(record);
   const statusNormalized = normalizeStatus(normalized.status);
   const defs = FIELD_DEFS[normalized.app_type] || [];
-  const rows = defs
-    .map(
-      (def) => `
-      <label class="field">
-        <span class="lbl">${def.label}</span>
-        ${buildInput(def, normalized.data?.[def.key])}
-      </label>
-    `
-    )
-    .join("");
+  const groups = {
+    out: [
+      { title: "申請人資訊", keys: ['teacherName', 'department', 'teacherId', 'ext'] },
+      { title: "活動時間", keys: ['timeSlots'] },
+      { title: "活動詳情", keys: ['courseTitle', 'organizer', 'relevance', 'hasCert', 'certNo', 'evidenceLink'] }
+    ],
+    in: [
+      { title: "基本資訊", keys: ['organizerDept', 'eventName', 'hostName', 'ext', 'location'] },
+      { title: "活動時間", keys: ['timeSlots'] },
+      { title: "指標與說明", keys: ['domain', 'domainOther', 'sdg', 'teachingRelation', 'note'] }
+    ]
+  };
+
+  const currentGroups = groups[normalized.app_type] || [{title: "申請內容", keys: defs.map(d => d.key)}];
+
+  const groupedRows = currentGroups.map(group => {
+    const groupFields = group.keys.map(key => {
+      if (key === 'timeSlots') {
+        const slots = getRecordSlots(normalized);
+        const isOut = normalized.app_type === "out";
+        const readonly = statusNormalized === "approved";
+        const showBtns = isOut && !readonly;
+        const btnStyle = showBtns ? 'style="padding:0 8px; margin-left:8px;"' : 'style="display:none"';
+        const slotRows = slots.length ? slots.map(s => createTimeSlotRow(s, !showBtns)).join("") : createTimeSlotRow({}, !showBtns);
+        return `
+          <div class="field field-span-2">
+            <span class="lbl">活動起訖時段 <button type="button" class="btn icon-btn ghost slot-add" title="新增時段" ${btnStyle}>+</button></span>
+            <div id="timeSlotsList">${slotRows}</div>
+          </div>
+          <label class="field">
+            <span class="lbl">活動時數（自動計算，最多 4 小時）</span>
+            <input type="text" name="hours" value="${esc(normalized.data?.hours || calcRoundedHoursFromSlots(slots))}" readonly class="readonly-style">
+          </label>
+        `;
+      }
+      const def = defs.find(d => d.key === key);
+      if(!def) return "";
+      
+      const isReadOnly = def.readonly || statusNormalized === "approved" || def.key === "teacherName" || def.key === "department" || def.key === "teacherId";
+      const roClass = isReadOnly ? 'readonly-style' : '';
+      const v = def.type === "array" ? arrToText(normalized.data?.[def.key]) : normalized.data?.[def.key] || "";
+      
+      let inputHtml = "";
+      if (def.type === "textarea") {
+        inputHtml = `<textarea name="${def.key}" ${isReadOnly ? "readonly" : ""} class="${roClass}">${esc(v)}</textarea>`;
+      } else {
+        const inputType = def.type === "date" ? "date" : def.type === "time" ? "time" : "text";
+        inputHtml = `<input type="${inputType}" name="${def.key}" value="${esc(v)}" ${isReadOnly ? "readonly" : ""} class="${roClass}">`;
+      }
+
+      return `
+        <label class="field ${def.type === 'textarea' ? 'field-span-2' : ''}">
+          <span class="lbl">${def.label}</span>
+          ${inputHtml}
+        </label>
+      `;
+    }).join("");
+    return `
+      <div class="form-group">
+        <h4 class="group-title">${group.title}</h4>
+        <div class="grid g-2">
+          ${groupFields}
+        </div>
+      </div>
+    `;
+  }).join("");
 
   const approvedHours =
     normalized.approved_hours !== null && normalized.approved_hours !== undefined
@@ -334,49 +440,85 @@ function renderDetail(record) {
   const resubmitPanel =
     statusNormalized === "rejected"
       ? `
-      <div class="resubmit-panel">
-        <label class="field field-span-2">
-          <span class="lbl">補件說明（重新送審必填）</span>
-          <textarea name="resubmit_comment" id="resubmitComment" placeholder="請說明已補正的內容"></textarea>
+      <div class="form-group" style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 30px;">
+        <h4 class="group-title">退件補齊作業</h4>
+        <label class="field">
+          <span class="lbl req">補件說明（重新送審必填）</span>
+          <textarea name="resubmit_comment" id="resubmitComment" placeholder="請說明已補正的內容" rows="4"></textarea>
         </label>
-        <div class="detail-actions">
-          <button type="button" id="btnResubmit" class="btn primary">重新送審</button>
+        <div class="form-actions" style="border-top: none; padding-top: 0;">
+          <button type="button" id="btnResubmit" class="btn primary btn-large">重新送審</button>
         </div>
       </div>
     `
       : "";
 
   detailRoot.innerHTML = `
-    <div class="detail-header">
-      <span class="history-badge ${normalized.app_type}">${fmtType(normalized.app_type)}</span>
-      <span class="status-badge ${statusNormalized}">${fmtStatus(normalized.status)}</span>
-      <strong>${esc(normalized.event_name || "-")}</strong>
-      <span class="muted">${esc(normalized.event_date || "-")}</span>
+    <div class="detail-hero" style="margin-bottom: 40px; padding: 24px 30px; background: rgba(255,255,255,0.7); border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="muted" style="font-size: 14px;">${esc(normalized.event_date || "-")}</div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <strong style="font-size: 24px; color: var(--text);">${esc(normalized.event_name || "-")}</strong>
+          <span class="history-badge ${normalized.app_type}">${fmtType(normalized.app_type)}</span>
+          <span class="status-badge ${statusNormalized}">${fmtStatus(normalized.status)}</span>
+        </div>
+      </div>
+      <div class="detail-actions" style="display: flex; gap: 12px;">
+        <button type="button" id="btnDelete" class="btn ghost danger">刪除紀錄</button>
+        <button type="submit" form="detailForm" class="btn primary">儲存變更</button>
+      </div>
     </div>
-    <form id="detailForm" class="detail-form" data-id="${normalized.id}" data-type="${normalized.app_type}">
-      <div class="detail-grid">
-        ${rows}
-        <label class="field">
-          <span class="lbl">審核狀態</span>
-          <input type="text" value="${fmtStatus(normalized.status)}" disabled>
-        </label>
-        <label class="field">
-          <span class="lbl">核定時數</span>
-          <input type="text" value="${esc(approvedHours)}" disabled>
-        </label>
+
+    <form id="detailForm" class="form unboxed-form" novalidate data-id="${normalized.id}" data-type="${normalized.app_type}">
+      ${groupedRows}
+      
+      <div class="form-group">
+        <h4 class="group-title">審核資訊</h4>
+        <div class="grid g-2">
+          <label class="field">
+            <span class="lbl">審核狀態</span>
+            <input type="text" value="${fmtStatus(normalized.status)}" readonly class="readonly-style">
+          </label>
+          <label class="field">
+            <span class="lbl">核定時數</span>
+            <input type="text" value="${esc(approvedHours)}" readonly class="readonly-style">
+          </label>
+        </div>
       </div>
-      <div class="detail-actions">
-        <button type="button" id="btnDelete" class="btn ghost">刪除</button>
-        <button type="submit" class="btn primary">儲存</button>
-      </div>
-      <section class="status-history-panel">
-        <div class="lbl">狀態歷程紀錄</div>
+
+      <div class="form-group" style="margin-top: 40px;">
+        <h4 class="group-title">狀態歷程紀錄</h4>
         ${statusHistoryHtml}
-      </section>
+      </div>
+
       ${renderAttachments(normalized)}
       ${resubmitPanel}
     </form>
   `;
+
+  // Apply drop-zone logic
+  const fileDropZone = document.getElementById("detailFileDropZone");
+  const fileInput = document.getElementById("detailFiles");
+  if (fileDropZone && fileInput) {
+    fileDropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      fileDropZone.style.borderColor = "var(--accent)";
+      fileDropZone.style.background = "rgba(59, 130, 246, 0.05)";
+    });
+    fileDropZone.addEventListener("dragleave", () => {
+      fileDropZone.style.borderColor = "var(--border)";
+      fileDropZone.style.background = "rgba(248, 250, 252, 0.5)";
+    });
+    fileDropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      fileDropZone.style.borderColor = "var(--border)";
+      fileDropZone.style.background = "rgba(248, 250, 252, 0.5)";
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event("change"));
+      }
+    });
+  }
 }
 
 async function api(path, options = {}) {
@@ -419,30 +561,11 @@ async function loadDetail() {
 
 function buildUpdatePayload(form, appType, baseRecord) {
   const data = normalizeFormData(form, appType, baseRecord.data || {});
-  const existingSlots = getRecordSlots(baseRecord);
+  
+  const slotsFromDOM = getTimeSlotsFromDOM(form);
+  const slots = slotsFromDOM.length > 0 ? slotsFromDOM : getRecordSlots(baseRecord);
 
-  const slots =
-    appType === "in"
-      ? [
-          {
-            startDate: data.eventDateStart || "",
-            endDate: data.eventDateEnd || data.eventDateStart || "",
-            startTime: data.startTime || "",
-            endTime: data.endTime || "",
-          },
-        ]
-      : existingSlots.length
-        ? existingSlots
-        : [
-            {
-              startDate: data.eventDateStart || "",
-              endDate: data.eventDateEnd || data.eventDateStart || "",
-              startTime: data.startTime || "",
-              endTime: data.endTime || "",
-            },
-          ];
-
-  const slotErr = appType === "in" ? validateInCampusDateTime(data) : validateTimeSlots(slots);
+  const slotErr = appType === "in" && slotsFromDOM.length === 0 ? validateInCampusDateTime(data) : validateTimeSlots(slots);
   if (slotErr) throw new Error(slotErr);
 
   const hasAnySlotData = slots.some((s) => s.startDate || s.endDate || s.startTime || s.endTime);
@@ -452,10 +575,10 @@ function buildUpdatePayload(form, appType, baseRecord) {
     const startDates = slots.map((s) => s.startDate).filter(Boolean).sort();
     const endDates = slots.map((s) => s.endDate).filter(Boolean).sort();
 
-    data.eventDateStart = data.eventDateStart || startDates[0] || endDates[0] || "";
-    data.eventDateEnd = data.eventDateEnd || endDates[endDates.length - 1] || data.eventDateStart || "";
-    data.startTime = firstSlot.startTime || data.startTime || "";
-    data.endTime = firstSlot.endTime || data.endTime || "";
+    data.eventDateStart = startDates[0] || endDates[0] || "";
+    data.eventDateEnd = endDates[endDates.length - 1] || data.eventDateStart || "";
+    data.startTime = firstSlot.startTime || "";
+    data.endTime = firstSlot.endTime || "";
     data.hours = calcRoundedHoursFromSlots(slots);
     data.eventDate = buildEventDate(data.eventDateStart, data.eventDateEnd);
     data.timeSlots = slots.map((s) => ({
@@ -493,14 +616,48 @@ detailRoot?.addEventListener("input", (event) => {
   if (!(target instanceof HTMLInputElement)) return;
   const form = target.closest("#detailForm");
   if (!form) return;
-  if (!["eventDateStart", "eventDateEnd", "startTime", "endTime"].includes(target.name)) return;
-  const startDate = form.querySelector('input[name="eventDateStart"]')?.value?.trim() || "";
-  const endDate = form.querySelector('input[name="eventDateEnd"]')?.value?.trim() || "";
-  const startTime = form.querySelector('input[name="startTime"]')?.value?.trim() || "";
-  const endTime = form.querySelector('input[name="endTime"]')?.value?.trim() || "";
-  const hoursInput = form.querySelector('input[name="hours"]');
-  if (hoursInput) {
-    hoursInput.value = calcRoundedHoursFromSlots([{ startDate, endDate, startTime, endTime }]);
+  
+  if (
+    target.classList.contains("slot-start") ||
+    target.classList.contains("slot-end") ||
+    target.classList.contains("slot-date-start") ||
+    target.classList.contains("slot-date-end")
+  ) {
+    const hoursInput = form.querySelector('input[name="hours"]');
+    if (hoursInput) {
+      hoursInput.value = calcRoundedHoursFromSlots(getTimeSlotsFromDOM(form));
+    }
+  }
+});
+
+detailRoot?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  const form = target.closest("#detailForm");
+  
+  if (target.classList.contains("slot-add")) {
+    if (!form) return;
+    const container = form.querySelector("#timeSlotsList");
+    if (container) {
+      container.insertAdjacentHTML("beforeend", createTimeSlotRow());
+    }
+    return;
+  }
+
+  if (target.classList.contains("slot-remove")) {
+    if (!form) return;
+    const row = target.closest(".time-slot-row");
+    if (!row) return;
+    const container = form.querySelector("#timeSlotsList");
+    row.remove();
+    if (container && !container.querySelector(".time-slot-row")) {
+      container.insertAdjacentHTML("beforeend", createTimeSlotRow());
+    }
+    const hoursInput = form.querySelector('input[name="hours"]');
+    if (hoursInput) {
+      hoursInput.value = calcRoundedHoursFromSlots(getTimeSlotsFromDOM(form));
+    }
+    return;
   }
 });
 

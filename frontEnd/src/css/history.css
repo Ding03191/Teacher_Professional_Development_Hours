@@ -16,7 +16,7 @@ body {
   margin: 0;
   font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at top, #fff8ef 0%, #f5f1ec 40%, #efe9e2 100%);
+  background: var(--ui-bg, #f8fafc);
 }
 
 .appbar {
@@ -146,7 +146,7 @@ input {
   color: var(--muted);
 }
 
-/* ===== 新版歷史紀錄 ===== */
+/* ===== ?啁?甇瑕蝝??===== */
 .history-toolbar {
   display: flex;
   justify-content: space-between;
@@ -182,26 +182,119 @@ input {
 
 .history-item {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 16px;
   background: #fff;
-  overflow: hidden;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+}
+.history-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
 }
 
 .history-summary {
-  display: grid;
-  grid-template-columns: 120px 90px 1fr 160px 180px;
-  gap: 12px;
-  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
   cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.history-summary strong {
-  font-size: 15px;
+.history-summary-left {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
-.history-summary .muted {
+.history-summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1; /* Take up all remaining space */
+  min-width: 0; /* Prevent overflow */
+}
+
+.history-summary-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-summary-meta {
+  display: flex;
+  gap: 16px;
   font-size: 13px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.history-summary-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.history-summary-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.history-hours {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.history-hours-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--brand, #3b82f6);
+  line-height: 1;
+}
+
+.history-hours-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.history-chevron {
+  color: #94a3b8;
+  transition: transform 0.2s ease, color 0.2s ease;
+  display: flex;
+}
+
+.history-item:hover .history-chevron {
+  transform: translateX(4px);
+  color: var(--brand, #3b82f6);
+}
+
+@media (max-width: 768px) {
+  .history-summary {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+  .history-summary-right {
+    justify-content: space-between;
+    width: 100%;
+    flex-direction: row-reverse;
+  }
 }
 
 .history-badge {
@@ -684,12 +777,61 @@ textarea {
   }
 }
 
-.history-summary-link {
-  text-decoration: none;
-  color: inherit;
-  display: grid;
+/* ==== Time Slots Grid ==== */
+.time-slot-row{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .85fr) auto;
+  gap:10px;
+  align-items:center;
+  margin-bottom:10px;
+}
+.time-slot-row:last-child {
+  margin-bottom:0;
 }
 
-.history-summary-link:hover {
-  background: #f8fafc;
+.time-slot-date-group,
+.time-slot-time-group{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap:10px;
+  align-items:center;
+}
+
+.time-slot-sep{
+  color:var(--muted);
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.time-slot-add{
+  width:42px;
+  min-width:42px;
+  height:42px;
+  padding:0;
+  border-radius:12px;
+}
+
+.btn.slot-remove{
+  width:42px;
+  min-width:42px;
+  height:42px;
+  padding:0;
+  border-radius:10px;
+  color:#475569;
+}
+
+@media (max-width:840px){
+  .time-slot-row{
+    grid-template-columns: 1fr;
+  }
+  .time-slot-date-group,
+  .time-slot-time-group{
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .time-slot-row .slot-remove{
+    justify-self:end;
+  }
+  .time-slot-add{
+    justify-self:end;
+  }
 }

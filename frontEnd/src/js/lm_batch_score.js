@@ -104,22 +104,23 @@ function renderTable() {
       const scored = scoreMap.get(record.id);
       const summary = recordSummary(record).slice(0, 180);
       const resultText = scored?.reason || "";
+      const typeText = record.app_type === "in" ? "校內" : "校外";
       return `
         <tr>
           <td><input name="pick" type="checkbox" value="${record.id}" ${scored ? "checked" : ""}></td>
           <td>${record.id}</td>
           <td>${escapeHtml(record.created_at || "-")}</td>
-          <td>${record.app_type === "in" ? "校內" : "校外"}</td>
+          <td><span class="review-badge ${record.app_type}">${typeText}</span></td>
           <td>${escapeHtml(record.unit_name || "-")}</td>
           <td>${escapeHtml(record.event_name || "-")}</td>
           <td class="summary-cell">${escapeHtml(summary || "-")}</td>
-          <td class="${scoreClass(scored?.score)}">${scored?.score ?? "-"}</td>
-          <td>${escapeHtml(resultText)}</td>
+          <td style="text-align: center;"><span class="${scoreClass(scored?.score)}">${scored?.score ?? "-"}</span></td>
+          <td style="font-size: 13px; color: var(--muted);">${escapeHtml(resultText)}</td>
         </tr>
       `;
     })
     .join("");
-  scoreTableBody.innerHTML = rows || `<tr><td colspan="9">本週一批次無資料。</td></tr>`;
+  scoreTableBody.innerHTML = rows || `<tr><td colspan="9" style="text-align: center; padding: 40px; color: var(--muted);">本週一批次無資料。</td></tr>`;
 }
 
 async function loadBatchRecords() {

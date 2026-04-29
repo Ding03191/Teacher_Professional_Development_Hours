@@ -1,10 +1,11 @@
 :root {
-  --bg: #f6f3ef;
-  --surface: #ffffff;
-  --ink: #1a1a1a;
-  --muted: #6b7280;
-  --brand: #1d4ed8;
-  --line: #e5e7eb;
+  --bg: transparent;
+  --surface: rgba(255, 255, 255, 0.9);
+  --ink: #1e293b;
+  --muted: #64748b;
+  --brand: #3b82f6;
+  --accent: #f59e0b;
+  --line: #e2e8f0;
 }
 
 * {
@@ -24,35 +25,37 @@ body {
   padding: 0 20px;
 }
 
-.section-hd {
-  margin: 0 0 14px;
-}
-
-.section-hd h2 {
-  margin: 0 0 8px;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 18px 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
-}
-
-.card-hd {
+/* ==== 去框化群組標題 ==== */
+.group-title {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
   font-weight: 700;
-  margin-bottom: 12px;
+  color: var(--ink);
+  margin: 0 0 20px 0;
+  position: relative;
+  padding-left: 14px;
+}
+.group-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 22px;
+  background-color: var(--brand);
+  border-radius: 4px;
+}
+
+/* ==== 控制台區塊 (Form) ==== */
+.control-panel {
+  margin-bottom: 40px;
 }
 
 .form {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .grid.g-2 {
@@ -66,6 +69,7 @@ body {
 
 .lbl {
   font-size: 14px;
+  font-weight: 600;
   color: var(--muted);
 }
 
@@ -74,27 +78,46 @@ body {
 }
 
 input,
-select {
+select.modern-select {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 15px;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.7);
+}
+input:focus,
+select.modern-select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #fff;
 }
 
 .actions {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 6px;
 }
 
+/* ==== Buttons ==== */
 .btn {
   border: 1px solid var(--line);
   background: #fff;
   color: var(--ink);
-  padding: 8px 14px;
+  padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
 .btn.primary {
@@ -102,53 +125,119 @@ select {
   color: #fff;
   border-color: var(--brand);
 }
+.btn.primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
 
 .btn.ghost {
   background: transparent;
 }
+.btn.ghost:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.btn-large {
+  padding: 10px 24px;
+  font-size: 16px;
+}
+
+.btn.danger-ghost {
+  color: #dc2626;
+  background: transparent;
+  border-color: transparent;
+}
+.btn.danger-ghost:hover {
+  background: #fee2e2;
+}
+
+/* ==== 現代化數據資料表 ==== */
+.data-grid-section {
+  margin-top: 40px;
+}
 
 .table-wrap {
   overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.table {
+.modern-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
 }
 
-.table th,
-.table td {
+.modern-table th {
+  background: #f8fafc;
+  color: var(--muted);
+  font-weight: 600;
   text-align: left;
-  padding: 10px 8px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 
-.table td input,
-.table td select {
+.modern-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  transition: background 0.2s;
+}
+
+.modern-table tbody tr:hover td {
+  background: #f8fafc;
+}
+.modern-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.modern-table td input,
+.modern-table td select {
   width: 100%;
   min-width: 140px;
-  padding: 6px 8px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid transparent;
+}
+.modern-table td input:focus,
+.modern-table td select:focus {
+  background: #fff;
+  border-color: var(--brand);
 }
 
 .row-actions {
   display: flex;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 .msg {
   min-height: 20px;
-  margin-top: 8px;
-  font-size: 13px;
-  color: #dc2626;
+  font-size: 14px;
+  font-weight: 600;
+  color: #10b981; /* Success default */
+}
+.msg.error {
+  color: #ef4444;
+}
+
+/* Tab logic styling handled by JS or inline HTML */
+.tab-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 900px) {
   .grid.g-2 {
     grid-template-columns: 1fr;
   }
-
   .span-2 {
     grid-column: span 1;
   }

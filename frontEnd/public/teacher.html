@@ -138,108 +138,122 @@
       </div>
 
 
-      <article class="card">
-        <div class="card-hd">申請資訊</div>
-        <div class="card-bd">
-          <form id="formTeacher" class="form" novalidate>
-            <div class="grid g-2">
-              <label class="field">
-                <span class="lbl req">教師姓名</span>
-                <input name="teacherName" required placeholder="王小明">
-              </label>
-              <label class="field">
-                <span class="lbl req">任教單位</span>
-                <input name="department" required placeholder="資訊工程系">
-              </label>
-              <label class="field">
-                <span class="lbl req">教師編號</span>
-                <input name="teacherId" required placeholder="T12345">
-              </label>
-              <label class="field">
-                <span class="lbl">聯絡分機</span>
-                <input name="ext" placeholder="1234">
-              </label>
-            </div>
-
-            <div class="grid g-2">
-              <div class="field field-span-2">
-                <span class="lbl req">活動起訖時段（每個時段需設定日期）</span>
-                <div class="time-slot-inline">
-                  <div id="timeSlotsOut" class="time-slots">
-                    <div class="time-slot-row">
-                      <div class="time-slot-date-group">
-                        <input type="date" class="slot-date-start" required>
-                        <span class="time-slot-sep">~</span>
-                        <input type="date" class="slot-date-end" required>
-                      </div>
-                      <div class="time-slot-time-group">
-                        <input type="time" class="slot-start" required>
-                        <span class="time-slot-sep">~</span>
-                        <input type="time" class="slot-end" required>
-                      </div>
-                      <button type="button" class="btn ghost slot-remove" aria-label="移除時段" style="visibility:hidden" disabled>×</button>
-                    </div>
-                  </div>
-                  <button id="btnAddTimeSlotOut" type="button" class="btn icon-btn time-slot-add" aria-label="新增時段">+</button>
-                </div>
-              </div>
-
-              <label class="field">
-                <span class="lbl req">活動名稱</span>
-                <input name="courseTitle" required placeholder="生成式 AI 教學應用">
-              </label>
-              <label class="field">
-                <span class="lbl req">舉辦單位</span>
-                <input name="organizer" required placeholder="國立教育大學 教育學院">
-              </label>
-            </div>
-
+            <form id="formTeacher" class="form unboxed-form" novalidate>
+        <!-- 區塊一：申請人資訊 -->
+        <div class="form-group">
+          <h4 class="group-title">申請人資訊</h4>
+          <div class="grid g-2">
             <label class="field">
-              <span class="lbl req">教學專業成長</span>
-              <textarea name="relevance" required placeholder="說明此次研習如何強化教學、課程設計或研究能量…"></textarea>
+              <span class="lbl req">教師姓名</span>
+              <input name="teacherName" required placeholder="王小明" class="readonly-style" readonly>
             </label>
+            <label class="field">
+              <span class="lbl req">任教單位</span>
+              <input name="department" required placeholder="資訊工程系" class="readonly-style" readonly>
+            </label>
+            <label class="field">
+              <span class="lbl req">教師編號</span>
+              <input name="teacherId" required placeholder="T12345" class="readonly-style" readonly>
+            </label>
+            <label class="field">
+              <span class="lbl">聯絡分機</span>
+              <input name="ext" placeholder="1234">
+            </label>
+          </div>
+        </div>
 
-            <div class="grid g-2">
-              <div class="field">
-                <span class="lbl req">是否核發證書</span>
-                <div class="row">
-                  <label class="choice">
-                    <input type="radio" name="hasCert" value="yes" required> 是
-                  </label>
-                  <label class="choice">
-                    <input type="radio" name="hasCert" value="no"> 否
-                  </label>
+        <!-- 區塊二：活動內容 -->
+        <div class="form-group">
+          <h4 class="group-title">活動內容</h4>
+          <div class="field">
+            <span class="lbl req">活動起訖時段（每個時段需設定日期）</span>
+            <div class="time-slot-inline">
+              <div id="timeSlotsOut" class="time-slots">
+                <div class="time-slot-row">
+                  <div class="time-slot-date-group">
+                    <input type="date" class="slot-date-start" required>
+                    <span class="time-slot-sep">~</span>
+                    <input type="date" class="slot-date-end" required>
+                  </div>
+                  <div class="time-slot-time-group">
+                    <input type="time" class="slot-start" required>
+                    <span class="time-slot-sep">~</span>
+                    <input type="time" class="slot-end" required>
+                  </div>
+                  <button type="button" class="btn ghost slot-remove" aria-label="移除時段" style="visibility:hidden" disabled>×</button>
                 </div>
               </div>
-              <label id="certNoBox" class="field is-hidden">
-                <span class="lbl">證書字號</span>
-                <input name="certNo" placeholder="A-2025-000123">
-              </label>
+              <button id="btnAddTimeSlotOut" type="button" class="btn icon-btn time-slot-add" aria-label="新增時段">+</button>
             </div>
+          </div>
 
+          <div class="grid g-2">
+            <label class="field">
+              <span class="lbl req">活動名稱</span>
+              <input name="courseTitle" required placeholder="生成式 AI 教學應用">
+            </label>
+            <label class="field">
+              <span class="lbl req">舉辦單位</span>
+              <input name="organizer" required placeholder="國立教育大學 教育學院">
+            </label>
+          </div>
+
+          <div class="grid g-2">
             <div class="field">
-              <span class="lbl req">上傳等佐證參與活動資料（可多檔）</span>
-              <div class="uploader">
-                <input id="files" type="file" multiple
-                       accept=".pdf,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp" required>
-                <p class="muted">請至少上傳 1 份：PDF、Excel 或圖檔（JPG/PNG/WebP/GIF/BMP）。</p>
-                <ul id="fileList" class="file-list"></ul>
+              <span class="lbl req">是否核發證書</span>
+              <div class="row radio-group">
+                <label class="choice">
+                  <input type="radio" name="hasCert" value="yes" required> 是
+                </label>
+                <label class="choice">
+                  <input type="radio" name="hasCert" value="no"> 否
+                </label>
               </div>
             </div>
-
-                        <div class="field">
-              <span class="lbl">附上連結（選填）</span>
-              <input id="evidenceLink" name="evidenceLink" type="url" placeholder="https://" />
-              <p class="muted">可填活動網頁、雲端連結或其他佐證網址。</p>
-            </div>
-
-<div id="msg" class="msg"></div>
-            <div class="actions">
-              <button type="submit" class="btn primary">送出</button>
-            </div>
-          </form>
+            <label id="certNoBox" class="field is-hidden">
+              <span class="lbl">證書字號</span>
+              <input name="certNo" placeholder="A-2025-000123">
+            </label>
+          </div>
         </div>
-      </article>
+
+        <!-- 區塊三：佐證與心得 -->
+        <div class="form-group">
+          <h4 class="group-title">佐證與心得</h4>
+          <label class="field">
+            <span class="lbl req">教學專業成長</span>
+            <textarea name="relevance" required placeholder="說明此次研習如何強化教學、課程設計或研究能量…" rows="5"></textarea>
+          </label>
+
+          <div class="field">
+            <span class="lbl req">上傳佐證資料（可多檔）</span>
+            <div class="file-drop-zone" id="fileDropZone">
+              <div class="drop-zone-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              </div>
+              <div class="drop-zone-text">
+                <span class="text-primary" style="font-weight:bold;">點擊選擇檔案</span> 或將檔案拖曳至此
+              </div>
+              <p class="muted">請至少上傳 1 份：PDF、Excel 或圖檔（JPG/PNG/WebP）</p>
+              <input id="files" type="file" multiple accept=".pdf,.xlsx,.jpg,.jpeg,.png,.webp,.gif,.bmp" required>
+            </div>
+            <ul id="fileList" class="file-list"></ul>
+          </div>
+
+          <div class="field">
+            <span class="lbl">附上連結（選填）</span>
+            <input id="evidenceLink" name="evidenceLink" type="url" placeholder="https://" />
+            <p class="muted">可填活動網頁、雲端連結或其他佐證網址。</p>
+          </div>
+        </div>
+
+        <div id="msg" class="msg"></div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn ghost" onclick="history.back()">取消</button>
+          <button type="submit" class="btn primary btn-large">送出申請</button>
+        </div>
+      </form>
 
       <!-- 新增：申請完成提醒文字 -->
       </div>
